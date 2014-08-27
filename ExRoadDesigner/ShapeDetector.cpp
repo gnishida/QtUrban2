@@ -31,25 +31,6 @@ std::vector<RoadEdgeDescs> ShapeDetector::detect(RoadGraph &roads, float scale, 
 	// expand circles
 	for (int i = 0; i < shapes.size(); ++i) {
 		addVerticesToCircle(roads, shapes[i], threshold, usedVertices, usedEdges);
-		/*
-		QMap<RoadVertexDesc, bool> visited;
-		for (int j = 0; j < shapes[i].size(); ++j) {
-			RoadVertexDesc src = boost::source(shapes[i][j], roads.graph);
-			RoadVertexDesc tgt = boost::target(shapes[i][j], roads.graph);
-			if (!visited.contains(src)) {
-				RoadEdgeDescs shape = addVerticesToCircle(roads, src, threshold, visited, usedEdges);
-				for (int k = 0; k < shape.size(); ++k) {
-					shapes[i].push_back(shape[k]);
-				}
-			}
-			if (!visited.contains(tgt)) {
-				RoadEdgeDescs shape = addVerticesToCircle(roads, tgt, threshold, visited, usedEdges);
-				for (int k = 0; k < shape.size(); ++k) {
-					shapes[i].push_back(shape[k]);
-				}
-			}
-		}
-		*/
 	}
 	
 	// detect close vertices
@@ -71,7 +52,7 @@ std::vector<RoadEdgeDescs> ShapeDetector::detect(RoadGraph &roads, float scale, 
 		std::cout << "Close vertices detection: " << (double)(end - start) / CLOCKS_PER_SEC << " [sec]" << std::endl;
 	}
 
-	
+	savePatchImages(roads, shapes);
 
 	return shapes;
 }
@@ -201,4 +182,46 @@ void ShapeDetector::addVerticesToGroup(RoadGraph &roads, RoadVertexDesc srcDesc,
 	for (QMap<RoadEdgeDesc, bool>::iterator it = edge_descs.begin(); it != edge_descs.end(); ++it) {
 		shape.push_back(it.key());
 	}
+}
+
+void ShapeDetector::savePatchImages(RoadGraph& roads, std::vector<RoadEdgeDescs> shapes) {
+	// 画像の大きさを決定
+	BBox bbox = GraphUtil::getAABoundingBox(roads);
+
+
+	for (int i = 0; i < shapes.size(); ++i) {
+		cv::Mat img((int)(bbox.dy() + 1), (int)(bbox.dx() + 1), CV_8UC3, cv::Scalar(0, 0, 0));
+
+		// 画像に、全パッチを描画する
+		for (int j2 = 0; j2 < shapes.size(); ++j2) {
+			for (int k = 0 ; k < shapes[j2].size(); ++k) {
+				for (int pl = 0; pl < roads.graph[shapes[j2][k]]->polyline.size() - 1; ++pl) {
+					int x1 = roads.graph[shapes[j2][k]]->polyline[pl].x() - bbox.minPt.x();
+					int y1 = roads.graph[shapes[j2][k]]->polyline[pl].y() - bbox.minPt.y();
+					int x2 = roads.graph[shapes[j2][k]]->polyline[pl+1].x() - bbox.minPt.x();
+					int y2 = roads.graph[shapes[j2][k]]->polyline[pl+1].y() - bbox.minPt.y();
+
+					cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 255, 255), 3);
+				}
+			}
+		}
+
+		// 画像に、当該パッチを描画する
+		for (int k = 0 ; k < shapes[i].size(); ++k) {
+			for (int pl = 0; pl < roads.graph[shapes[i][k]]->polyline.size() - 1; ++pl) {
+				int x1 = roads.graph[shapes[i][k]]->polyline[pl].x() - bbox.minPt.x();
+				int y1 = roads.graph[shapes[i][k]]->polyline[pl].y() - bbox.minPt.y();
+				int x2 = roads.graph[shapes[i][k]]->polyline[pl+1].x() - bbox.minPt.x();
+				int y2 = roads.graph[shapes[i][k]]->polyline[pl+1].y() - bbox.minPt.y();
+
+				cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 0, 0), 3);
+			}
+		}
+
+		char filename[255];
+		sprintf(filename, "patches/avenue_patch_%d.jpg", i);
+		cv::flip(img, img, 0);
+		cv::imwrite(filename, img);
+	}
+
 }

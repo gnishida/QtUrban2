@@ -324,48 +324,10 @@ void ExFeature::detectAvenueShapes(float houghScale, float patchDistance) {
 
 	avenueShapes = ShapeDetector::detect(reducedAvenues, houghScale, patchDistance);
 
-
-	// 画像の大きさを決定
-	BBox bbox = GraphUtil::getAABoundingBox(avenues);
-
-
 	for (int j = 0; j < avenueShapes.size(); ++j) {
-		cv::Mat img((int)(bbox.dy() + 1), (int)(bbox.dx() + 1), CV_8UC3, cv::Scalar(0, 0, 0));
-
 		for (int k = 0 ; k < avenueShapes[j].size(); ++k) {
 			reducedAvenues.graph[avenueShapes[j][k]]->properties["shape_id"] = j;
 		}
-
-		// 画像に、全パッチを描画する
-		for (int j2 = 0; j2 < avenueShapes.size(); ++j2) {
-			for (int k = 0 ; k < avenueShapes[j2].size(); ++k) {
-				for (int pl = 0; pl < reducedAvenues.graph[avenueShapes[j2][k]]->polyline.size() - 1; ++pl) {
-					int x1 = reducedAvenues.graph[avenueShapes[j2][k]]->polyline[pl].x() - bbox.minPt.x();
-					int y1 = reducedAvenues.graph[avenueShapes[j2][k]]->polyline[pl].y() - bbox.minPt.y();
-					int x2 = reducedAvenues.graph[avenueShapes[j2][k]]->polyline[pl+1].x() - bbox.minPt.x();
-					int y2 = reducedAvenues.graph[avenueShapes[j2][k]]->polyline[pl+1].y() - bbox.minPt.y();
-
-					cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 255, 255), 3);
-				}
-			}
-		}
-
-		// 画像に、当該パッチを描画する
-		for (int k = 0 ; k < avenueShapes[j].size(); ++k) {
-			for (int pl = 0; pl < reducedAvenues.graph[avenueShapes[j][k]]->polyline.size() - 1; ++pl) {
-				int x1 = reducedAvenues.graph[avenueShapes[j][k]]->polyline[pl].x() - bbox.minPt.x();
-				int y1 = reducedAvenues.graph[avenueShapes[j][k]]->polyline[pl].y() - bbox.minPt.y();
-				int x2 = reducedAvenues.graph[avenueShapes[j][k]]->polyline[pl+1].x() - bbox.minPt.x();
-				int y2 = reducedAvenues.graph[avenueShapes[j][k]]->polyline[pl+1].y() - bbox.minPt.y();
-
-				cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 0, 0), 3);
-			}
-		}
-
-		char filename[255];
-		sprintf(filename, "patches/avenue_patch_%d.jpg", j);
-		cv::flip(img, img, 0);
-		cv::imwrite(filename, img);
 	}
 }
 
