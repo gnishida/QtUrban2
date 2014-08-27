@@ -57,7 +57,7 @@ std::vector<RoadEdgeDescs> ShapeDetector::detect(RoadGraph &roads, float scale, 
 	return shapes;
 }
 
-RoadEdgeDescs ShapeDetector::addVerticesToCircle(RoadGraph &roads, RoadEdgeDescs& shape, float threshold, QMap<RoadVertexDesc, bool> &usedVertices, QMap<RoadEdgeDesc, int> &usedEdges) {
+void ShapeDetector::addVerticesToCircle(RoadGraph &roads, RoadEdgeDescs& shape, float threshold, QMap<RoadVertexDesc, bool> &usedVertices, QMap<RoadEdgeDesc, int> &usedEdges) {
 	float threshold2 = SQR(threshold);
 
 	std::list<RoadVertexDesc> queue;
@@ -116,10 +116,7 @@ RoadEdgeDescs ShapeDetector::addVerticesToCircle(RoadGraph &roads, RoadEdgeDescs
 	for (QMap<RoadEdgeDesc, bool>::iterator it = edge_descs.begin(); it != edge_descs.end(); ++it) {
 		shape.push_back(it.key());
 	}
-
-	return shape;
 }
-
 
 void ShapeDetector::addVerticesToGroup(RoadGraph &roads, RoadVertexDesc srcDesc, float threshold, RoadEdgeDescs &shape, QMap<RoadVertexDesc, bool> &usedVertices, QMap<RoadEdgeDesc, int> &usedEdges) {
 	std::cout << "shape is detected..." << srcDesc << std::endl;
