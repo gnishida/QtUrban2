@@ -330,13 +330,13 @@ void ExFeature::detectAvenueShapes(float houghScale, float patchDistance) {
 
 
 	for (int j = 0; j < avenueShapes.size(); ++j) {
-		cv::Mat img((int)(bbox.dy() + 1), (int)(bbox.dx() + 1), CV_8UC3);
+		cv::Mat img((int)(bbox.dy() + 1), (int)(bbox.dx() + 1), CV_8UC3, cv::Scalar(0, 0, 0));
 
 		for (int k = 0 ; k < avenueShapes[j].size(); ++k) {
 			reducedAvenues.graph[avenueShapes[j][k]]->properties["shape_id"] = j;
 		}
 
-		// 画像に、パッチを描画する
+		// 画像に、全パッチを描画する
 		for (int j2 = 0; j2 < avenueShapes.size(); ++j2) {
 			for (int k = 0 ; k < avenueShapes[j2].size(); ++k) {
 				for (int pl = 0; pl < reducedAvenues.graph[avenueShapes[j2][k]]->polyline.size() - 1; ++pl) {
@@ -345,12 +345,20 @@ void ExFeature::detectAvenueShapes(float houghScale, float patchDistance) {
 					int x2 = reducedAvenues.graph[avenueShapes[j2][k]]->polyline[pl+1].x() - bbox.minPt.x();
 					int y2 = reducedAvenues.graph[avenueShapes[j2][k]]->polyline[pl+1].y() - bbox.minPt.y();
 
-					if (j2 == j) {
-						cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 0, 0), 3);
-					} else {
-						cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 255, 255), 3);
-					}
+					cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 255, 255), 3);
 				}
+			}
+		}
+
+		// 画像に、当該パッチを描画する
+		for (int k = 0 ; k < avenueShapes[j].size(); ++k) {
+			for (int pl = 0; pl < reducedAvenues.graph[avenueShapes[j][k]]->polyline.size() - 1; ++pl) {
+				int x1 = reducedAvenues.graph[avenueShapes[j][k]]->polyline[pl].x() - bbox.minPt.x();
+				int y1 = reducedAvenues.graph[avenueShapes[j][k]]->polyline[pl].y() - bbox.minPt.y();
+				int x2 = reducedAvenues.graph[avenueShapes[j][k]]->polyline[pl+1].x() - bbox.minPt.x();
+				int y2 = reducedAvenues.graph[avenueShapes[j][k]]->polyline[pl+1].y() - bbox.minPt.y();
+
+				cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 0, 0), 3);
 			}
 		}
 

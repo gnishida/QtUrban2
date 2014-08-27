@@ -1,4 +1,4 @@
-#include "ShapeDetector.h"
+﻿#include "ShapeDetector.h"
 #include "GraphUtil.h"
 #include <QHash>
 #include "CircleHoughTransform.h"
@@ -60,32 +60,14 @@ std::vector<RoadEdgeDescs> ShapeDetector::detect(RoadGraph &roads, float scale, 
 		RoadVertexIter vi, vend;
 		for (boost::tie(vi, vend) = vertices(roads.graph); vi != vend; ++vi) {
 			if (!roads.graph[*vi]->valid) continue;
-			if (usedVerticesInCircles.contains(*vi)) continue;
-
-			// don't include deadend
-			//if (GraphUtil::getDegree(roads, *vi) == 1) continue;
+			if (usedVertices.contains(*vi)) continue;
 
 			// don't start from the non-intersection.
 			if (GraphUtil::getDegree(roads, *vi) <= 2) continue;
 
-			RoadOutEdgeIter ei, eend;
-			for (boost::tie(ei, eend) = boost::out_edges(*vi, roads.graph); ei != eend; ++ei) {
-				if (!roads.graph[*ei]->valid) continue;
-				//if (usedEdges.contains(*ei)) continue;
-
-				//RoadVertexDesc tgt = boost::target(*ei, roads.graph);
-				//if (usedVertices.contains(tgt)) continue;
-
-				// don't include deadend
-				//if (GraphUtil::getDegree(roads, tgt) == 1) continue;
-
-				//if ((roads.graph[*vi]->pt - roads.graph[tgt]->pt).lengthSquared() <= threshold2*1000000) {
-					std::vector<RoadEdgeDesc> shape;
-					addVerticesToGroup(roads, *vi, threshold, shape, usedVertices, usedEdges);
-					shapes.push_back(shape);
-					break;
-				//}
-			}
+			std::vector<RoadEdgeDesc> shape;
+			addVerticesToGroup(roads, *vi, threshold, shape, usedVertices, usedEdges);
+			shapes.push_back(shape);
 		}
 		time_t end = clock();
 		std::cout << "Close vertices detection: " << (double)(end - start) / CLOCKS_PER_SEC << " [sec]" << std::endl;
@@ -154,15 +136,16 @@ RoadEdgeDescs ShapeDetector::addVerticesToCircle(RoadGraph &roads, RoadVertexDes
 void ShapeDetector::addVerticesToGroup(RoadGraph &roads, RoadVertexDesc srcDesc, float threshold, RoadEdgeDescs &shape, QMap<RoadVertexDesc, bool> &usedVertices, QMap<RoadEdgeDesc, int> &usedEdges) {
 	std::cout << "shape is detected..." << srcDesc << std::endl;
 
-	float threshold2 = SQR(threshold);
+	// パッチに含まれるエッジのセット
+	QMap<RoadEdgeDesc, bool> edge_descs;
+
+	QMap<RoadVertexDesc, bool> visited;
 
 	std::list<RoadVertexDesc> queue;
 	queue.push_back(srcDesc);
-
-	QMap<RoadVertexDesc, bool> vertex_descs;
-	vertex_descs[srcDesc] = true;
-
-	QMap<RoadEdgeDesc, bool> edge_descs;
+	usedVertices[srcDesc] = true;
+	visited[srcDesc] = true;
+	roads.graph[srcDesc]->properties["length"] = 0.0f;
 
 	while (!queue.empty()) {
 		RoadVertexDesc desc = queue.front();
@@ -171,15 +154,26 @@ void ShapeDetector::addVerticesToGroup(RoadGraph &roads, RoadVertexDesc srcDesc,
 		RoadOutEdgeIter ei, eend;
 		for (boost::tie(ei, eend) = boost::out_edges(desc, roads.graph); ei != eend; ++ei) {
 			if (!roads.graph[*ei]->valid) continue;
-			//if (edge_descs.contains(*ei)) continue;
-			if (usedEdges.contains(*ei) && usedEdges[*ei] > 1) continue;
+			//if (usedEdges.contains(*ei)) continue;
 
+			usedEdges[*ei] = 1;
+			edge_descs[*ei] = true;
 			RoadVertexDesc tgt = boost::target(*ei, roads.graph);
-			//if (usedVertices.contains(tgt)) continue;
+			if (usedVertices.contains(tgt)) continue;
+			if (visited.contains(tgt)) continue;
 
-			if (GraphUtil::getDegree(roads, tgt) <= 2 || (roads.graph[desc]->pt - roads.graph[tgt]->pt).lengthSquared() < threshold2) {
-				edge_descs[*ei] = true;
+			if (GraphUtil::getDegree(roads, tgt) <= 2 || roads.graph[desc]->properties["length"].toFloat() + roads.graph[*ei]->polyline.length() <= threshold) {
+				queue.push_back(tgt);
+				visited[tgt] = true;
 
+				if (GraphUtil::getDegree(roads, tgt) <= 2) {
+					roads.graph[tgt]->properties["length"] = roads.graph[desc]->properties["length"].toFloat() + roads.graph[*ei]->polyline.length();
+				} else {
+					roads.graph[tgt]->properties["length"] = 0.0f;
+					usedVertices[tgt] = true;
+				}
+
+				/*
 				// GEN 2014/8/26 fixed the bug
 				if (usedEdges.contains(*ei)) {
 					usedEdges[*ei]++;
@@ -192,6 +186,7 @@ void ShapeDetector::addVerticesToGroup(RoadGraph &roads, RoadVertexDesc srcDesc,
 					queue.push_back(tgt);
 					vertex_descs[tgt] = true;
 				}
+				*/
 			}
 		}
 	}
