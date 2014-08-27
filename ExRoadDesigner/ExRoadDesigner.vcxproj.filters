@@ -1,0 +1,686 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Form Files">
+      <UniqueIdentifier>{99349809-55BA-4b9d-BF79-8FDBB0286EB3}</UniqueIdentifier>
+      <Extensions>ui</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{D9D6E242-F8AF-46E4-B9FD-80ECBC20BA3E}</UniqueIdentifier>
+      <Extensions>qrc;*</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+    <Filter Include="Generated Files">
+      <UniqueIdentifier>{71ED8ED8-ACB9-4CE9-BBE1-E00B30144E11}</UniqueIdentifier>
+      <Extensions>moc;h;cpp</Extensions>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
+    <Filter Include="Generated Files\Debug">
+      <UniqueIdentifier>{4a63ca79-3cd4-4eb8-b07e-c21f3da1de93}</UniqueIdentifier>
+      <Extensions>cpp;moc</Extensions>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
+    <Filter Include="Generated Files\Release">
+      <UniqueIdentifier>{e8767c72-b359-464f-ab85-46a5d46ddbe5}</UniqueIdentifier>
+      <Extensions>cpp;moc</Extensions>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
+    <Filter Include="road generator">
+      <UniqueIdentifier>{d6c9abeb-58e0-4010-88d5-12dc283827de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Main Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;cxx;c;def</Extensions>
+    </Filter>
+    <Filter Include="common">
+      <UniqueIdentifier>{fb349a01-a1fa-43e3-8d24-f3a2615eeefd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="road">
+      <UniqueIdentifier>{518af3da-2e72-4b54-81bd-a277adbb469c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="PM Blocks">
+      <UniqueIdentifier>{0c679474-b313-45cf-8352-882a78a96147}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="PM Blocks\Geometry">
+      <UniqueIdentifier>{30f3fad5-3177-40bf-af01-67c0a442da73}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="VBO">
+      <UniqueIdentifier>{aebcea57-bebf-40c6-ad5d-faf9d8a21739}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="VBO\nvModels">
+      <UniqueIdentifier>{aea19619-d12d-45e1-a8fc-9c4a9a84a93d}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>Main Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_MainWindow.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_MainWindow.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\qrc_MainWindow.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RoadEdge.cpp">
+      <Filter>Main Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RoadGraph.cpp">
+      <Filter>Main Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RoadVertex.cpp">
+      <Filter>Main Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_PropertyWidget.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_PropertyWidget.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="GLWidget3D.cpp">
+      <Filter>Main Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VBOShader.cpp">
+      <Filter>VBO</Filter>
+    </ClCompile>
+    <ClCompile Include="VBOUtil.cpp">
+      <Filter>VBO</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_ControlWidget.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="UrbanGeometry.cpp">
+      <Filter>Main Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RendererHelper.cpp">
+      <Filter>VBO</Filter>
+    </ClCompile>
+    <ClCompile Include="VBORoadGraph.cpp">
+      <Filter>VBO</Filter>
+    </ClCompile>
+    <ClCompile Include="ExFeature.cpp">
+      <Filter>road generator</Filter>
+    </ClCompile>
+    <ClCompile Include="RoadGeneratorHelper.cpp">
+      <Filter>road generator</Filter>
+    </ClCompile>
+    <ClCompile Include="BBox.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="global.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="Histogram.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="Polygon2D.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="Polygon3D.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="Polyline2D.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="Polyline3D.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="TensorField.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="TopNSearch.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="Util.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="ConvexHull.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="PolygonBuilder.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="PolylineBuilder.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_ControlWidget.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="ColorTable.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="ElevationColorTable.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_TerrainSizeInputDialog.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_TerrainSizeInputDialog.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="VBOTerrain.cpp">
+      <Filter>VBO</Filter>
+    </ClCompile>
+    <ClCompile Include="VBOWater.cpp">
+      <Filter>VBO</Filter>
+    </ClCompile>
+    <ClCompile Include="LC_Layer.cpp">
+      <Filter>VBO</Filter>
+    </ClCompile>
+    <ClCompile Include="VBOSkyBox.cpp">
+      <Filter>VBO</Filter>
+    </ClCompile>
+    <ClCompile Include="VBORenderManager.cpp">
+      <Filter>VBO</Filter>
+    </ClCompile>
+    <ClCompile Include="VBOBlock.cpp">
+      <Filter>PM Blocks\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="VBOParcel.cpp">
+      <Filter>PM Blocks\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="VBOPlaceType.cpp">
+      <Filter>PM Blocks\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="GLWidget3D_Shadows.cpp">
+      <Filter>Main Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HoughTransform.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="CircleHoughTransform.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="PatchMultiIntExRoadGenerator.cpp">
+      <Filter>road generator</Filter>
+    </ClCompile>
+    <ClCompile Include="PatchWarpRoadGenerator.cpp">
+      <Filter>road generator</Filter>
+    </ClCompile>
+    <ClCompile Include="BSpline.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="PatchTensorRoadGenerator.cpp">
+      <Filter>road generator</Filter>
+    </ClCompile>
+    <ClCompile Include="PMRoadGenerator.cpp">
+      <Filter>road generator</Filter>
+    </ClCompile>
+    <ClCompile Include="PatchWarp2RoadGenerator.cpp">
+      <Filter>road generator</Filter>
+    </ClCompile>
+    <ClCompile Include="clipper.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="VBOGeoBuilding.cpp">
+      <Filter>PM Blocks</Filter>
+    </ClCompile>
+    <ClCompile Include="VBOPm.cpp">
+      <Filter>PM Blocks</Filter>
+    </ClCompile>
+    <ClCompile Include="VBOPmBlocks.cpp">
+      <Filter>PM Blocks</Filter>
+    </ClCompile>
+    <ClCompile Include="VBOPmBuildings.cpp">
+      <Filter>PM Blocks</Filter>
+    </ClCompile>
+    <ClCompile Include="VBOPmParcels.cpp">
+      <Filter>PM Blocks</Filter>
+    </ClCompile>
+    <ClCompile Include="PropertyWidget.cpp">
+      <Filter>Form Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MainWindow.cpp">
+      <Filter>Main Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TerrainSizeInputDialog.cpp">
+      <Filter>Form Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RoadArea.cpp">
+      <Filter>road</Filter>
+    </ClCompile>
+    <ClCompile Include="RoadAreaSet.cpp">
+      <Filter>road</Filter>
+    </ClCompile>
+    <ClCompile Include="ShapeDetector.cpp">
+      <Filter>road</Filter>
+    </ClCompile>
+    <ClCompile Include="SmallBlockRemover.cpp">
+      <Filter>road</Filter>
+    </ClCompile>
+    <ClCompile Include="GraphUtil.cpp">
+      <Filter>road</Filter>
+    </ClCompile>
+    <ClCompile Include="VBOModel.cpp">
+      <Filter>VBO\nvModels</Filter>
+    </ClCompile>
+    <ClCompile Include="VBOModel_StreetElements.cpp">
+      <Filter>VBO\nvModels</Filter>
+    </ClCompile>
+    <ClCompile Include="nvModel\nvModel.cpp">
+      <Filter>VBO\nvModels</Filter>
+    </ClCompile>
+    <ClCompile Include="nvModel\nvModelObj.cpp">
+      <Filter>VBO\nvModels</Filter>
+    </ClCompile>
+    <ClCompile Include="nvModel\nvModelQuery.cpp">
+      <Filter>VBO\nvModels</Filter>
+    </ClCompile>
+    <ClCompile Include="VBOVegetation.cpp">
+      <Filter>VBO</Filter>
+    </ClCompile>
+    <ClCompile Include="ControlWidget.cpp">
+      <Filter>Form Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CameraSequence.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="CircleDetectionScaleInputDialog.cpp">
+      <Filter>Form Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_CircleDetectionScaleInputDialog.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_CircleDetectionScaleInputDialog.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="VoronoiUtil.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="FlyThroughCamera.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="MassSpring.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="MorphGrid.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="VideoCaptureSettingDialog.cpp">
+      <Filter>Form Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_VideoCaptureSettingDialog.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_VideoCaptureSettingDialog.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="GrowingVideoSettingDialog.cpp">
+      <Filter>Form Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_GrowingVideoSettingDialog.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_GrowingVideoSettingDialog.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="BlendingVideoSettingDialog.cpp">
+      <Filter>Form Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_BlendingVideoSettingDialog.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_BlendingVideoSettingDialog.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="StructureDetectionSettingDialog.cpp">
+      <Filter>Form Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_StructureDetectionSettingDialog.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_StructureDetectionSettingDialog.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="InterpolationVideoSettingDialog.cpp">
+      <Filter>Form Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_InterpolationVideoSettingDialog.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_InterpolationVideoSettingDialog.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="RotationVideoSettingDialog.cpp">
+      <Filter>Form Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_RotationVideoSettingDialog.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_RotationVideoSettingDialog.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="MainWindow.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="MainWindow.qrc">
+      <Filter>Resource Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="PropertyWidget.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="TerrainSizeInputDialog.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="ControlWidget.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="PropertyWidget.h">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="MainWindow.h">
+      <Filter>Main Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="TerrainSizeInputDialog.h">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="ControlWidget.h">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="CircleDetectionScaleInputDialog.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="CircleDetectionScaleInputDialog.h">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="VideoCaptureSettingDialog.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="VideoCaptureSettingDialog.h">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="GrowingVideoSettingDialog.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="GrowingVideoSettingDialog.h">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="BlendingVideoSettingDialog.h">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="BlendingVideoSettingDialog.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="StructureDetectionSettingDialog.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="StructureDetectionSettingDialog.h">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="InterpolationVideoSettingDialog.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="InterpolationVideoSettingDialog.h">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="RotationVideoSettingDialog.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="RotationVideoSettingDialog.h">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="GeneratedFiles\ui_MainWindow.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RoadEdge.h">
+      <Filter>Main Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RoadGraph.h">
+      <Filter>Main Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RoadVertex.h">
+      <Filter>Main Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_PropertyWidget.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GLWidget3D.h">
+      <Filter>Main Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VBOUtil.h">
+      <Filter>VBO</Filter>
+    </ClInclude>
+    <ClInclude Include="VBORenderManager.h">
+      <Filter>VBO</Filter>
+    </ClInclude>
+    <ClInclude Include="VBOShader.h">
+      <Filter>VBO</Filter>
+    </ClInclude>
+    <ClInclude Include="UrbanGeometry.h">
+      <Filter>Main Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RendererHelper.h">
+      <Filter>VBO</Filter>
+    </ClInclude>
+    <ClInclude Include="VBORoadGraph.h">
+      <Filter>VBO</Filter>
+    </ClInclude>
+    <ClInclude Include="ExFeature.h">
+      <Filter>road generator</Filter>
+    </ClInclude>
+    <ClInclude Include="RoadGeneratorHelper.h">
+      <Filter>road generator</Filter>
+    </ClInclude>
+    <ClInclude Include="BBox.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="global.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="Histogram.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="Polygon2D.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="Polygon3D.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="Polyline2D.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="Polyline3D.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="TensorField.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="TopNSearch.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="Util.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="common.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="ConvexHull.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="PolylineBuilder.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="PolygonBuilder.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="ColorTable.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="ElevationColorTable.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_TerrainSizeInputDialog.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_ControlWidget.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VBOTerrain.h">
+      <Filter>VBO</Filter>
+    </ClInclude>
+    <ClInclude Include="VBOWater.h">
+      <Filter>VBO</Filter>
+    </ClInclude>
+    <ClInclude Include="LC_Layer.h">
+      <Filter>VBO</Filter>
+    </ClInclude>
+    <ClInclude Include="VBOSkyBox.h">
+      <Filter>VBO</Filter>
+    </ClInclude>
+    <ClInclude Include="VBOPlaceType.h">
+      <Filter>PM Blocks\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="VBOBlock.h">
+      <Filter>PM Blocks\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="VBOBuilding.h">
+      <Filter>PM Blocks\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="VBOParcel.h">
+      <Filter>PM Blocks\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="GLWidget3D_Shadows.h">
+      <Filter>Main Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HoughTransform.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="CircleHoughTransform.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="PatchMultiIntExRoadGenerator.h">
+      <Filter>road generator</Filter>
+    </ClInclude>
+    <ClInclude Include="PatchWarpRoadGenerator.h">
+      <Filter>road generator</Filter>
+    </ClInclude>
+    <ClInclude Include="BSpline.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="PatchTensorRoadGenerator.h">
+      <Filter>road generator</Filter>
+    </ClInclude>
+    <ClInclude Include="PMRoadGenerator.h">
+      <Filter>road generator</Filter>
+    </ClInclude>
+    <ClInclude Include="PatchWarp2RoadGenerator.h">
+      <Filter>road generator</Filter>
+    </ClInclude>
+    <ClInclude Include="clipper.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="VBOPmParcels.h">
+      <Filter>PM Blocks</Filter>
+    </ClInclude>
+    <ClInclude Include="VBOGeoBuilding.h">
+      <Filter>PM Blocks</Filter>
+    </ClInclude>
+    <ClInclude Include="VBOPm.h">
+      <Filter>PM Blocks</Filter>
+    </ClInclude>
+    <ClInclude Include="VBOPmBlocks.h">
+      <Filter>PM Blocks</Filter>
+    </ClInclude>
+    <ClInclude Include="VBOPmBuildings.h">
+      <Filter>PM Blocks</Filter>
+    </ClInclude>
+    <ClInclude Include="RoadArea.h">
+      <Filter>road</Filter>
+    </ClInclude>
+    <ClInclude Include="RoadAreaSet.h">
+      <Filter>road</Filter>
+    </ClInclude>
+    <ClInclude Include="ShapeDetector.h">
+      <Filter>road</Filter>
+    </ClInclude>
+    <ClInclude Include="SmallBlockRemover.h">
+      <Filter>road</Filter>
+    </ClInclude>
+    <ClInclude Include="GraphUtil.h">
+      <Filter>road</Filter>
+    </ClInclude>
+    <ClInclude Include="VBOModel.h">
+      <Filter>VBO\nvModels</Filter>
+    </ClInclude>
+    <ClInclude Include="VBOModel_StreetElements.h">
+      <Filter>VBO\nvModels</Filter>
+    </ClInclude>
+    <ClInclude Include="nvModel\nvMath.h">
+      <Filter>VBO\nvModels</Filter>
+    </ClInclude>
+    <ClInclude Include="nvModel\nvMatrix.h">
+      <Filter>VBO\nvModels</Filter>
+    </ClInclude>
+    <ClInclude Include="nvModel\nvModel.h">
+      <Filter>VBO\nvModels</Filter>
+    </ClInclude>
+    <ClInclude Include="nvModel\nvQuaternion.h">
+      <Filter>VBO\nvModels</Filter>
+    </ClInclude>
+    <ClInclude Include="nvModel\nvVector.h">
+      <Filter>VBO\nvModels</Filter>
+    </ClInclude>
+    <ClInclude Include="VBOVegetation.h">
+      <Filter>VBO</Filter>
+    </ClInclude>
+    <ClInclude Include="CameraSequence.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_CircleDetectionScaleInputDialog.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VoronoiUtil.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera2D.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="FlyThroughCamera.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="MassSpring.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="MorphGrid.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera3D.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_VideoCaptureSettingDialog.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_GrowingVideoSettingDialog.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_BlendingVideoSettingDialog.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_StructureDetectionSettingDialog.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_InterpolationVideoSettingDialog.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_RotationVideoSettingDialog.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\data\shaders\lc_fragment_sk.glsl">
+      <Filter>VBO</Filter>
+    </None>
+    <None Include="..\data\shaders\lc_vertex_sk.glsl">
+      <Filter>VBO</Filter>
+    </None>
+  </ItemGroup>
+</Project>
