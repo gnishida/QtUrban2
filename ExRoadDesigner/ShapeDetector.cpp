@@ -9,11 +9,9 @@ std::vector<RoadEdgeDescs> ShapeDetector::detect(RoadGraph &roads, float scale, 
 	RoadVertexDesc center;
 
 	QMap<RoadVertexDesc, bool> usedVertices;
-	QMap<RoadVertexDesc, bool> usedVerticesInCircles;
 	QMap<RoadEdgeDesc, int> usedEdges;
 
 	std::vector<RoadEdgeDescs> shapes;
-	/*
 	// detect circles
 	shapes = CircleHoughTransform::detect(roads, scale);
 	time_t start = clock();
@@ -24,8 +22,6 @@ std::vector<RoadEdgeDescs> ShapeDetector::detect(RoadGraph &roads, float scale, 
 
 			usedVertices[src] = true;
 			usedVertices[tgt] = true;
-			usedVerticesInCircles[src] = true;
-			usedVerticesInCircles[tgt] = true;
 			usedEdges[shapes[i][j]] = 2;
 		}
 	}
@@ -34,6 +30,8 @@ std::vector<RoadEdgeDescs> ShapeDetector::detect(RoadGraph &roads, float scale, 
 
 	// expand circles
 	for (int i = 0; i < shapes.size(); ++i) {
+		addVerticesToCircle(roads, shapes[i], threshold, usedVertices, usedEdges);
+		/*
 		QMap<RoadVertexDesc, bool> visited;
 		for (int j = 0; j < shapes[i].size(); ++j) {
 			RoadVertexDesc src = boost::source(shapes[i][j], roads.graph);
@@ -51,8 +49,8 @@ std::vector<RoadEdgeDescs> ShapeDetector::detect(RoadGraph &roads, float scale, 
 				}
 			}
 		}
+		*/
 	}
-	*/
 	
 	// detect close vertices
 	{
@@ -78,53 +76,62 @@ std::vector<RoadEdgeDescs> ShapeDetector::detect(RoadGraph &roads, float scale, 
 	return shapes;
 }
 
-RoadEdgeDescs ShapeDetector::addVerticesToCircle(RoadGraph &roads, RoadVertexDesc srcDesc, float threshold, QMap<RoadVertexDesc, bool> &visited, QMap<RoadEdgeDesc, int> &usedEdges) {
-	RoadEdgeDescs shape;
-
+RoadEdgeDescs ShapeDetector::addVerticesToCircle(RoadGraph &roads, RoadEdgeDescs& shape, float threshold, QMap<RoadVertexDesc, bool> &usedVertices, QMap<RoadEdgeDesc, int> &usedEdges) {
 	float threshold2 = SQR(threshold);
 
 	std::list<RoadVertexDesc> queue;
-	queue.push_back(srcDesc);
+	QMap<RoadVertexDesc, bool> visited;
 
-	QMap<RoadVertexDesc, bool> vertex_descs;
-	vertex_descs[srcDesc] = true;
+	for (int i = 0; i < shape.size(); ++i) {
+		RoadVertexDesc src = boost::source(shape[i], roads.graph);
+		RoadVertexDesc tgt = boost::target(shape[i], roads.graph);
 
+		if (!visited.contains(src)) {
+			queue.push_back(src);
+			visited[src] = true;
+		}
+		if (!visited.contains(tgt)) {
+			queue.push_back(tgt);
+			visited[tgt] = true;
+		}
+	}
+
+	// パッチに含まれるエッジのセット
 	QMap<RoadEdgeDesc, bool> edge_descs;
+	for (int i = 0; i < shape.size(); ++i) {
+		edge_descs[shape[i]] = true;
+	}
 
 	while (!queue.empty()) {
 		RoadVertexDesc desc = queue.front();
 		queue.pop_front();
-		visited[desc] = true;
-
-		if (GraphUtil::getDegree(roads, desc) > 2) continue;
 
 		RoadOutEdgeIter ei, eend;
 		for (boost::tie(ei, eend) = boost::out_edges(desc, roads.graph); ei != eend; ++ei) {
 			if (!roads.graph[*ei]->valid) continue;
-			//if (edge_descs.contains(*ei)) continue;
-			if (usedEdges.contains(*ei) && usedEdges[*ei] > 1) continue;
+			//if (usedEdges.contains(*ei)) continue;
 
+			usedEdges[*ei] = 1;
+			edge_descs[*ei] = true;
 			RoadVertexDesc tgt = boost::target(*ei, roads.graph);
+			if (usedVertices.contains(tgt)) continue;
 			if (visited.contains(tgt)) continue;
 
-			//if (GraphUtil::getDegree(roads, tgt) <= 2 || (roads.graph[desc]->pt - roads.graph[tgt]->pt).lengthSquared() < threshold2) {
-				edge_descs[*ei] = true;
+			if (GraphUtil::getDegree(roads, tgt) <= 2 || roads.graph[desc]->properties["length"].toFloat() + roads.graph[*ei]->polyline.length() <= threshold) {
+				queue.push_back(tgt);
+				visited[tgt] = true;
 
-				// GEN 2014/8/26 fixed the bug
-				if (usedEdges.contains(*ei)) {
-					usedEdges[*ei]++;
+				if (GraphUtil::getDegree(roads, tgt) <= 2) {
+					roads.graph[tgt]->properties["length"] = roads.graph[desc]->properties["length"].toFloat() + roads.graph[*ei]->polyline.length();
 				} else {
-					usedEdges[*ei] = 1;
+					roads.graph[tgt]->properties["length"] = 0.0f;
+					usedVertices[tgt] = true;
 				}
-
-				if (!vertex_descs.contains(tgt)) {				
-					queue.push_back(tgt);
-					vertex_descs[tgt] = true;
-				}
-			//}
+			}
 		}
 	}
 
+	shape.clear();
 	for (QMap<RoadEdgeDesc, bool>::iterator it = edge_descs.begin(); it != edge_descs.end(); ++it) {
 		shape.push_back(it.key());
 	}
