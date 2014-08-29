@@ -5,6 +5,7 @@
 #include "RoadEdge.h"
 #include <fstream>
 #include "ShapeDetector.h"
+#include "RoadGeneratorHelper.h"
 
 void ExFeature::setArea(const Polygon2D &area) {
 	this->area = area;
@@ -291,6 +292,116 @@ void ExFeature::saveHintLine(QDomDocument &doc, QDomNode &parent) {
 }
 
 /**
+ * パッチを画像として保存する。
+ */
+void ExFeature::savePatchImages(RoadGraph& roads, std::vector<Patch> patches) {
+	// 画像の大きさを決定
+	BBox bbox = GraphUtil::getAABoundingBox(roads);
+
+	for (int i = 0; i < patches.size(); ++i) {
+		cv::Mat img((int)(bbox.dy() + 1), (int)(bbox.dx() + 1), CV_8UC3, cv::Scalar(0, 0, 0));
+
+		// 画像に、全パッチを描画する
+		for (int j2 = 0; j2 < patches.size(); ++j2) {
+			RoadEdgeIter ei, eend;
+			for (boost::tie(ei, eend) = boost::edges(patches[j2].roads.graph); ei != eend; ++ei) {
+				for (int pl = 0; pl < patches[j2].roads.graph[*ei]->polyline.size() - 1; ++pl) {
+					int x1 = patches[j2].roads.graph[*ei]->polyline[pl].x() - bbox.minPt.x();
+					int y1 = img.rows - (patches[j2].roads.graph[*ei]->polyline[pl].y() - bbox.minPt.y());
+					int x2 = patches[j2].roads.graph[*ei]->polyline[pl+1].x() - bbox.minPt.x();
+					int y2 = img.rows - (patches[j2].roads.graph[*ei]->polyline[pl+1].y() - bbox.minPt.y());
+
+					cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 255, 255), 3);
+				}
+			}
+		}
+
+		// 画像に、当該パッチを描画する
+		{
+			RoadEdgeIter ei, eend;
+			for (boost::tie(ei, eend) = boost::edges(patches[i].roads.graph); ei != eend; ++ei) {
+				for (int pl = 0; pl < patches[i].roads.graph[*ei]->polyline.size() - 1; ++pl) {
+					int x1 = patches[i].roads.graph[*ei]->polyline[pl].x() - bbox.minPt.x();
+					int y1 = img.rows - (patches[i].roads.graph[*ei]->polyline[pl].y() - bbox.minPt.y());
+					int x2 = patches[i].roads.graph[*ei]->polyline[pl+1].x() - bbox.minPt.x();
+					int y2 = img.rows - (patches[i].roads.graph[*ei]->polyline[pl+1].y() - bbox.minPt.y());
+
+					cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 0, 0), 3);
+				}
+			}
+
+			// コネクタの描画 (灰色の×)
+			for (int ci = 0; ci < patches[i].connectors.size(); ++ci) {
+				int x = patches[i].roads.graph[patches[i].connectors[ci]]->pt.x() - bbox.minPt.x();
+				int y = img.rows - (patches[i].roads.graph[patches[i].connectors[ci]]->pt.y() - bbox.minPt.y());
+				cv::line(img, cv::Point(x - 10, y - 10), cv::Point(x + 10, y + 10), cv::Scalar(128, 128, 128), 5);
+				cv::line(img, cv::Point(x + 10, y - 10), cv::Point(x - 10, y + 10), cv::Scalar(128, 128, 128), 5);
+			}
+
+			RoadVertexIter vi, vend;
+			for (boost::tie(vi, vend) = boost::vertices(patches[i].roads.graph); vi != vend; ++vi) {
+				int x = patches[i].roads.graph[*vi]->pt.x() - bbox.minPt.x();
+				int y = img.rows - (patches[i].roads.graph[*vi]->pt.y() - bbox.minPt.y());
+
+				// onBoundaryの描画 (黄色の円)
+				if (patches[i].roads.graph[*vi]->onBoundary) {
+					cv::circle(img, cv::Point(x, y), 10, cv::Scalar(0, 255, 255), 5);
+				}
+
+				// deadendの描画 (赤色の円)
+				if (patches[i].roads.graph[*vi]->deadend) {
+					cv::circle(img, cv::Point(x, y), 10, cv::Scalar(0, 0, 255), 5);
+				}
+
+				// 頂点IDと、元のexampleの頂点IDを描画
+				QString str = QString::number(*vi) + "/" + QString::number(patches[i].roads.graph[*vi]->properties["example_desc"].toUInt());
+				cv::putText(img, str.toUtf8().data(), cv::Point(x, y), cv::FONT_HERSHEY_SCRIPT_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
+			}
+		}
+
+		char filename[255];
+		sprintf(filename, "patches/avenue_patch_%d.jpg", i);
+		//cv::flip(img, img, 0);
+		cv::imwrite(filename, img);
+	}
+
+	// 元のExample道路も描画（各頂点について、属するパッチIDを表示）
+	{
+		cv::Mat img((int)(bbox.dy() + 1), (int)(bbox.dx() + 1), CV_8UC3, cv::Scalar(0, 0, 0));
+
+		RoadEdgeIter ei, eend;
+		for (boost::tie(ei, eend) = boost::edges(roads.graph); ei != eend; ++ei) {
+			if (!roads.graph[*ei]->valid) continue;
+
+			for (int pl = 0; pl < roads.graph[*ei]->polyline.size() - 1; ++pl) {
+				int x1 = roads.graph[*ei]->polyline[pl].x() - bbox.minPt.x();
+				int y1 = img.rows - (roads.graph[*ei]->polyline[pl].y() - bbox.minPt.y());
+				int x2 = roads.graph[*ei]->polyline[pl+1].x() - bbox.minPt.x();
+				int y2 = img.rows - (roads.graph[*ei]->polyline[pl+1].y() - bbox.minPt.y());
+				cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(128, 128, 128), 3);
+			}
+		}
+
+		RoadVertexIter vi, vend;
+		for (boost::tie(vi, vend) = boost::vertices(roads.graph); vi != vend; ++vi) {
+			if (!roads.graph[*vi]->valid) continue;
+
+			int x = roads.graph[*vi]->pt.x() - bbox.minPt.x();
+			int y = img.rows - (roads.graph[*vi]->pt.y() - bbox.minPt.y());
+
+			// 属するパッチIDを描画
+			if (roads.graph[*vi]->patchId < 0 && !roads.graph[*vi]->onBoundary) {
+				printf("ERROR!!!!!!!!!!!!!!  patchID should be >= 0.");
+			}
+			QString str = QString::number(roads.graph[*vi]->patchId);
+			cv::putText(img, str.toUtf8().data(), cv::Point(x, y), cv::FONT_HERSHEY_SCRIPT_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
+		}
+
+		cv::imwrite("patches/patch_ids.jpg", img);
+	}
+}
+
+/**
  * 道路avenuesの各Vertexについて、ほぼ同じ座標のlocal streetのVertexがあれば、local streetのVertexの
  * propertyに"avenue_intersected" = trueを設定する。
  */
@@ -318,12 +429,26 @@ std::vector<RoadEdgeDescs> ExFeature::shapes(int roadType, float houghScale, flo
 	}
 }
 
+std::vector<Patch> ExFeature::patches(int roadType, float houghScale, float patchDistance) {
+	if (roadType == RoadEdge::TYPE_AVENUE) {
+		if (!avenueShapesDetected) detectAvenueShapes(houghScale, patchDistance);
+		return avenuePatches;
+	} else {
+		if (!streetShapesDetected) detectStreetShapes(houghScale, patchDistance);
+		return streetPatches;
+	}
+}
+
 void ExFeature::detectAvenueShapes(float houghScale, float patchDistance) {
 	if (avenueShapesDetected) return;
 	avenueShapesDetected = true;
 
 	avenueShapes = ShapeDetector::detect(reducedAvenues, houghScale, patchDistance);
+	avenuePatches = RoadGeneratorHelper::convertToPatch(RoadEdge::TYPE_AVENUE, reducedAvenues, avenueShapes);
 
+	savePatchImages(reducedAvenues, avenuePatches);
+
+	// 以下、不要と思う。。。。
 	for (int j = 0; j < avenueShapes.size(); ++j) {
 		for (int k = 0 ; k < avenueShapes[j].size(); ++k) {
 			reducedAvenues.graph[avenueShapes[j][k]]->properties["shape_id"] = j;

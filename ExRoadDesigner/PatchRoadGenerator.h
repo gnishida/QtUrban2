@@ -8,7 +8,7 @@
 //#include "Terrain.h"
 #include "VBORenderManager.h"
 
-class PatchMultiIntExRoadGenerator {
+class PatchRoadGenerator {
 private:
 	MainWindow *mainWin;
 	RoadGraph &roads;
@@ -18,8 +18,8 @@ private:
 	std::vector<ExFeature> &features;
 
 public:
-	PatchMultiIntExRoadGenerator(MainWindow *mainWin, RoadGraph &roads, const Polygon2D &targetArea, const Polyline2D &hintLine, VBORenderManager *vboRenderManager, std::vector<ExFeature> &features) : mainWin(mainWin), roads(roads), targetArea(targetArea), hintLine(hintLine), vboRenderManager(vboRenderManager), features(features) {}
-	~PatchMultiIntExRoadGenerator() {}
+	PatchRoadGenerator(MainWindow *mainWin, RoadGraph &roads, const Polygon2D &targetArea, const Polyline2D &hintLine, VBORenderManager *vboRenderManager, std::vector<ExFeature> &features) : mainWin(mainWin), roads(roads), targetArea(targetArea), hintLine(hintLine), vboRenderManager(vboRenderManager), features(features) {}
+	~PatchRoadGenerator() {}
 
 	void generateRoadNetwork();
 
@@ -28,9 +28,10 @@ private:
 	bool addAvenueSeed(ExFeature &f, const QVector2D &pt, const QVector2D &ex_pt, int group_id, int ex_id, std::list<RoadVertexDesc>& seeds);
 	void generateStreetSeeds(std::list<RoadVertexDesc> &seeds);
 	void generateStreetSeeds2(std::list<RoadVertexDesc> &seeds);
-	bool attemptExpansion(int roadType, RoadVertexDesc srcDesc, ExFeature& f, std::vector<RoadEdgeDescs> &shapes, std::list<RoadVertexDesc> &seeds);
+	bool attemptExpansion(int roadType, RoadVertexDesc srcDesc, ExFeature& f, std::vector<Patch> &patches, std::list<RoadVertexDesc> &seeds);
 
-	void buildReplacementGraphByExample(int roadType, RoadGraph &replacementGraph, RoadVertexDesc srcDesc, RoadGraph &exRoads, RoadVertexDesc ex_srcDesc, float angle, RoadEdgeDescs &shape);
+	void buildReplacementGraphByExample(int roadType, RoadGraph &replacementGraph, RoadVertexDesc srcDesc, RoadGraph &exRoads, RoadVertexDesc ex_srcDesc, float angle, Patch &patch, int patchId);
+	void buildReplacementGraphByExample(int roadType, RoadGraph &replacementGraph, RoadVertexDesc srcDesc, RoadGraph &exRoads, RoadVertexDesc ex_srcDesc, float angle, Patch &patch, int patchId, RoadVertexDesc v_connect);
 	void rewrite(int roadType, RoadVertexDesc srcDesc, RoadGraph &replacementGraph, std::list<RoadVertexDesc>& seeds);
 	bool isValidRule(RoadVertexDesc srcDesc, RoadGraph &replacementGraph);
 
@@ -40,6 +41,8 @@ private:
 
 	std::pair<int, RoadVertexDesc> synthesizeItem(int roadType, RoadVertexDesc v_desc, std::vector<RoadEdgeDescs> &shapes, std::vector<RoadEdgePtr> &edges, float &rotation_angle);
 	void replaceEdgeByExample(ExFeature &f, int roadType, RoadEdgePtr edge);
+
+	void saveRoadImage(RoadGraph& roads, const char* filename);
 public:
 };
 

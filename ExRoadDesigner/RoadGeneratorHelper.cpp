@@ -2124,6 +2124,66 @@ bool RoadGeneratorHelper::isShape(RoadGraph &roads, RoadVertexDesc desc, std::ve
 	return false;
 }
 
+// パッチオブジェクトに変換する
+std::vector<Patch> RoadGeneratorHelper::convertToPatch(int roadType, RoadGraph& roads, std::vector<RoadEdgeDescs> &shapes) {
+	std::vector<Patch> patches;
+	for (int i = 0; i < shapes.size(); ++i) {
+		Patch patch;
+
+		QMap<RoadVertexDesc, RoadVertexDesc> conv;
+		for (int j = 0; j < shapes[i].size(); ++j) {
+			RoadVertexDesc src = boost::source(shapes[i][j], roads.graph);
+			RoadVertexDesc tgt = boost::target(shapes[i][j], roads.graph);
+
+			if (!conv.contains(src)) {
+				RoadVertexPtr v = RoadVertexPtr(new RoadVertex(*roads.graph[src]));
+				RoadVertexDesc v_desc = GraphUtil::addVertex(patch.roads, v);
+				if (roadType == RoadEdge::TYPE_AVENUE) {
+					patch.roads.graph[v_desc]->properties["example_desc"] = src;
+				} else {
+					patch.roads.graph[v_desc]->properties["example_street_desc"] = src;
+				}
+				if (GraphUtil::getDegree(roads, src) == 1 && !roads.graph[src]->onBoundary) {
+					patch.roads.graph[v_desc]->deadend = true;
+				}
+				patch.roads.graph[v_desc]->patchId = i;
+				patch.roads.graph[v_desc]->type = roadType;
+				conv[src] = v_desc;
+			}
+			if (!conv.contains(tgt)) {
+				RoadVertexPtr v = RoadVertexPtr(new RoadVertex(*roads.graph[tgt]));
+				RoadVertexDesc v_desc = GraphUtil::addVertex(patch.roads, v);
+				if (roadType == RoadEdge::TYPE_AVENUE) {
+					patch.roads.graph[v_desc]->properties["example_desc"] = tgt;
+				} else {
+					patch.roads.graph[v_desc]->properties["example_street_desc"] = tgt;
+				}
+				if (GraphUtil::getDegree(roads, tgt) == 1 && !roads.graph[tgt]->onBoundary) {
+					patch.roads.graph[v_desc]->deadend = true;
+				}
+				patch.roads.graph[v_desc]->patchId = i;
+				patch.roads.graph[v_desc]->type = roadType;
+				conv[tgt] = v_desc;
+			}
+
+			RoadEdgePtr e = RoadEdgePtr(new RoadEdge(*roads.graph[shapes[i][j]]));
+			GraphUtil::addEdge(patch.roads, conv[src], conv[tgt], e);
+		}
+
+		// 各パッチのコネクタを設定
+		RoadVertexIter vi, vend;
+		for (boost::tie(vi, vend) = boost::vertices(patch.roads.graph); vi != vend; ++vi) {
+			if (GraphUtil::getDegree(patch.roads, *vi) == 1) {
+				patch.connectors.push_back(*vi);
+			}
+		}
+
+		patches.push_back(patch);
+	}
+
+	return patches;
+}
+
 RoadVertexDesc RoadGeneratorHelper::createEdgesByExample(RoadGraph &roads, float angle, std::vector<RoadEdgeDescs> &shapes, std::vector<RoadEdgePtr> &edges, float &rotation_angle) {
 	QMap<int, RoadVertexDesc> conv;
 

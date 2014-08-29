@@ -55,6 +55,7 @@ public:
 
 	void clear();
 	void clearGeometry();
+	void generateRoadsTest(std::vector<ExFeature> &features);
 	void generateRoadsPatchMulti(std::vector<ExFeature> &features);
 	void generateRoadsPatchWarp(std::vector<ExFeature> &features);
 	void generateRoadsPatchWarp2(std::vector<ExFeature> &features);

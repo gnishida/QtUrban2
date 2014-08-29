@@ -1,4 +1,4 @@
-﻿#include "PatchMultiIntExRoadGenerator.h"
+﻿#include "PatchRoadGenerator.h"
 #include <QTest>
 #include <boost/graph/planar_face_traversal.hpp>
 #include <boost/graph/boyer_myrvold_planar_test.hpp>
@@ -10,7 +10,7 @@
 #include "SmallBlockRemover.h"
 #include "ShapeDetector.h"
 
-void PatchMultiIntExRoadGenerator::generateRoadNetwork() {
+void PatchRoadGenerator::generateRoadNetwork() {
 	srand(12345);
 
 	// mark all the existing vertices as fixed
@@ -46,45 +46,53 @@ void PatchMultiIntExRoadGenerator::generateRoadNetwork() {
 	{
 		// detect interesting shapes
 		std::vector<std::vector<RoadEdgeDescs> > shapes;
-		std::vector<std::vector<RoadGraph> > patches;
+		std::vector<std::vector<Patch> > patches;
 		{
 			shapes.resize(features.size());
 			patches.resize(features.size());
 			for (int i = 0; i < features.size(); ++i) {
-				//shapes[i] = ShapeDetector::detect(features[i].reducedRoads(RoadEdge::TYPE_AVENUE), 0.2, G::getFloat("avenuePatchDistance"));
-				//shapes[i] = features[i].avenueShapes;
 				shapes[i] = features[i].shapes(RoadEdge::TYPE_AVENUE, G::getFloat("houghScale"), G::getFloat("avenuePatchDistance"));
-				//patches[i] = RoadGeneratorHelper::convertToPatch(RoadEdge::TYPE_AVENUE, features[i].reducedRoads(RoadEdge::TYPE_AVENUE), shapes[i]);
+				patches[i] = RoadGeneratorHelper::convertToPatch(RoadEdge::TYPE_AVENUE, features[i].reducedRoads(RoadEdge::TYPE_AVENUE), shapes[i]);
 
 				// 各エッジに、shape_idをセットする
+				// ExFeature側で、patchIdはセット済み。なので、これは不要！
+				/*
 				for (int j = 0; j < shapes[i].size(); ++j) {
 					for (int k = 0 ; k < shapes[i][j].size(); ++k) {
 						features[i].reducedRoads(RoadEdge::TYPE_AVENUE).graph[shapes[i][j][k]]->properties["shape_id"] = j;
 					}
 				}
+				*/
 			}
 		}
 
-		int i;
-		for (i = 0; !seeds.empty() && i < G::getInt("numAvenueIterations"); ++i) {
+		int iter;
+		for (iter = 0; !seeds.empty() && iter < G::getInt("numAvenueIterations"); ) {
 			RoadVertexDesc desc = seeds.front();
 			seeds.pop_front();
 
-			float z = vboRenderManager->getTerrainHeight(roads.graph[desc]->pt.x(), roads.graph[desc]->pt.y(), true);
-			if (z < G::getFloat("seaLevelForAvenue")) {
-				std::cout << "attemptExpansion (avenue): " << i << " (skipped because it is under the sea or on the mountains)" << std::endl;
+			// エリアの外なら、スキップする
+			if (!targetArea.contains(roads.graph[desc]->pt)) {
+				roads.graph[desc]->onBoundary = true;
 				continue;
 			}
 
-			std::cout << "attemptExpansion (avenue): " << i << " (Seed: " << desc << ")" << std::endl;
-			int ex_id = roads.graph[desc]->properties["ex_id"].toInt();
-			if (roads.graph[desc]->properties["generation_type"] == "example") {
-				if (!attemptExpansion(RoadEdge::TYPE_AVENUE, desc, features[ex_id], shapes[ex_id], seeds)) {
-					attemptExpansion2(RoadEdge::TYPE_AVENUE, desc, features[ex_id], shapes[ex_id], seeds);
-				}
-			} else {
-				attemptExpansion3(RoadEdge::TYPE_AVENUE, desc, features[ex_id], features[ex_id].reducedRoads(RoadEdge::TYPE_AVENUE), shapes[ex_id], seeds);
+			// 水中なら、スキップする
+			float z = vboRenderManager->getTerrainHeight(roads.graph[desc]->pt.x(), roads.graph[desc]->pt.y(), true);
+			if (z < G::getFloat("seaLevelForAvenue")) {
+				std::cout << "attemptExpansion (avenue): " << iter << " (skipped because it is under the sea)" << std::endl;
+				continue;
 			}
+
+			std::cout << "attemptExpansion (avenue): " << iter << " (Seed: " << desc << ")" << std::endl;
+			int ex_id = roads.graph[desc]->properties["ex_id"].toInt();
+			attemptExpansion(RoadEdge::TYPE_AVENUE, desc, features[ex_id], patches[ex_id], seeds);
+
+			char filename[255];
+			sprintf(filename, "road_images/avenues_%d.jpg", iter);
+			saveRoadImage(roads, filename);
+
+			iter++;
 		}
 	}
 	std::cout << "Avenue generation completed." << std::endl;
@@ -118,12 +126,13 @@ void PatchMultiIntExRoadGenerator::generateRoadNetwork() {
 		
 		// detect interesting shapes
 		std::vector<std::vector<RoadEdgeDescs> > shapes;
+		std::vector<std::vector<Patch> > patches;
 		{
 			shapes.resize(features.size());
+			patches.resize(features.size());
 			for (int i = 0; i < features.size(); ++i) {
-				//shapes[i] = ShapeDetector::detect(features[i].reducedRoads(RoadEdge::TYPE_STREET), 0.2, G::getFloat("streetPatchDistance"));
-				//shapes[i] = features[i].streetShapes;
 				shapes[i] = features[i].shapes(RoadEdge::TYPE_STREET, G::getFloat("houghScale"), G::getFloat("streetPatchDistance"));
+				patches[i] = RoadGeneratorHelper::convertToPatch(RoadEdge::TYPE_AVENUE, features[i].reducedRoads(RoadEdge::TYPE_AVENUE), shapes[i]);
 
 				for (int j = 0; j < shapes[i].size(); ++j) {
 					for (int k = 0 ; k < shapes[i][j].size(); ++k) {
@@ -150,11 +159,7 @@ void PatchMultiIntExRoadGenerator::generateRoadNetwork() {
 			if (roads.graph[desc]->properties["generation_type"] == "snapped") continue;
 
 			int ex_id = roads.graph[desc]->properties["ex_id"].toInt();
-			if (roads.graph[desc]->properties["generation_type"] == "example") {
-				attemptExpansion(RoadEdge::TYPE_STREET, desc, features[ex_id], shapes[ex_id], seeds);
-			} else {
-				attemptExpansion2(RoadEdge::TYPE_STREET, desc, features[ex_id], shapes[ex_id], seeds);
-			}
+			attemptExpansion(RoadEdge::TYPE_STREET, desc, features[ex_id], patches[ex_id], seeds);
 		}
 		std::cout << "Local street generation completed." << std::endl;
 	}
@@ -174,7 +179,7 @@ void PatchMultiIntExRoadGenerator::generateRoadNetwork() {
 /**
  * シード頂点を生成する。
  */
-void PatchMultiIntExRoadGenerator::generateAvenueSeeds(std::list<RoadVertexDesc>& seeds) {
+void PatchRoadGenerator::generateAvenueSeeds(std::list<RoadVertexDesc>& seeds) {
 	seeds.clear();
 
 	int numSeedsPerEx = hintLine.size() / features.size();
@@ -195,7 +200,7 @@ void PatchMultiIntExRoadGenerator::generateAvenueSeeds(std::list<RoadVertexDesc>
  * @param pt			シード座標
  * @param seeds			追加されたシードは、seedsに追加される。
  */
-bool PatchMultiIntExRoadGenerator::addAvenueSeed(ExFeature &f, const QVector2D &pt, const QVector2D &ex_pt, int group_id, int ex_id, std::list<RoadVertexDesc>& seeds) {
+bool PatchRoadGenerator::addAvenueSeed(ExFeature &f, const QVector2D &pt, const QVector2D &ex_pt, int group_id, int ex_id, std::list<RoadVertexDesc>& seeds) {
 	if (!targetArea.contains(pt)) return false;
 
 	RoadVertexDesc seedDesc = GraphUtil::getVertex(f.reducedRoads(RoadEdge::TYPE_AVENUE), ex_pt);
@@ -217,7 +222,7 @@ bool PatchMultiIntExRoadGenerator::addAvenueSeed(ExFeature &f, const QVector2D &
 /**
  * Local Street用のシードを生成する。
  */
-void PatchMultiIntExRoadGenerator::generateStreetSeeds(std::list<RoadVertexDesc> &seeds) {
+void PatchRoadGenerator::generateStreetSeeds(std::list<RoadVertexDesc> &seeds) {
 	seeds.clear();
 
 	// 頂点自体を、Local streetsのシードにする
@@ -255,7 +260,7 @@ void PatchMultiIntExRoadGenerator::generateStreetSeeds(std::list<RoadVertexDesc>
  * このシードを使って、道路生成する。
  * Exampleベースで生成する。
  */
-bool PatchMultiIntExRoadGenerator::attemptExpansion(int roadType, RoadVertexDesc srcDesc, ExFeature& f, std::vector<RoadEdgeDescs> &shapes, std::list<RoadVertexDesc> &seeds) {
+bool PatchRoadGenerator::attemptExpansion(int roadType, RoadVertexDesc srcDesc, ExFeature& f, std::vector<Patch> &patches, std::list<RoadVertexDesc> &seeds) {
 	RoadVertexDesc ex_v_desc;
 	if (roadType == RoadEdge::TYPE_AVENUE) {
 		ex_v_desc = roads.graph[srcDesc]->properties["example_desc"].toUInt();
@@ -265,151 +270,99 @@ bool PatchMultiIntExRoadGenerator::attemptExpansion(int roadType, RoadVertexDesc
 	float angle = roads.graph[srcDesc]->properties["rotation_angle"].toFloat();
 	RoadVertexPtr ex_vertex = f.reducedRoads(roadType).graph[ex_v_desc];
 
-	int shape_index;
-	if (!roads.graph[srcDesc]->properties.contains("shape")) {// && RoadGeneratorHelper::isShape(f.reducedRoads(roadType), ex_v_desc, shapes, shape_index)) {
-		shape_index = f.reducedRoads(roadType).graph[ex_v_desc]->patchId;
+	int patch_id = ex_vertex->patchId;
 
-		RoadGraph replacementGraph;
-		buildReplacementGraphByExample(roadType, replacementGraph, srcDesc, f.reducedRoads(roadType), ex_v_desc, angle, shapes[shape_index]);
-		if (RoadGeneratorHelper::submerged(roadType, replacementGraph, vboRenderManager)) {
-			for (int i = 0; i < 32; ++i) {
-				// try the right turn
-				{
-					float angle2 = angle - (float)i * 0.1f;
-					buildReplacementGraphByExample(roadType, replacementGraph, srcDesc, f.reducedRoads(roadType), ex_v_desc, angle2, shapes[shape_index]);
-					if (RoadGeneratorHelper::submerged(roadType, replacementGraph, vboRenderManager)) {
-						break;
-					}
-				}
+	RoadGraph replacementGraph;
 
-				// try the left turn
-				{
-					float angle2 = angle + (float)i * 0.1f;
-					buildReplacementGraphByExample(roadType, replacementGraph, srcDesc, f.reducedRoads(roadType), ex_v_desc, angle2, shapes[shape_index]);
-					if (RoadGeneratorHelper::submerged(roadType, replacementGraph, vboRenderManager)) {
-						break;
-					}
-				}
+	// 元のExampleで境界上の頂点である場合、対応するパッチがない。
+	// そこで、適当なパッチを探す。
+	if (ex_vertex->onBoundary) {
+		Polyline2D polyline = GraphUtil::getAdjoiningPolyline(roads, srcDesc);
+
+		float min_cost = std::numeric_limits<float>::max();
+		RoadVertexDesc root_desc;
+		RoadVertexDesc connect_desc;
+
+		std::reverse(polyline.begin(), polyline.end());
+		for (int i = 0; i < patches.size(); ++i) {
+			// 現在の頂点が属するパッチと、同じパッチは、使わない。
+			// もし使っちゃったら、同じパッチが並んでしまう。
+			if (i == roads.graph[srcDesc]->patchId) continue;
+
+			RoadVertexDesc v_connector;
+			RoadVertexDesc v_root;
+			float cost = patches[i].getMinCost(polyline, v_connector, v_root);
+			if (cost < min_cost) {
+				min_cost = cost;
+				patch_id = i;
+				connect_desc = v_connector;
+				root_desc = v_root;
 			}
 		}
 
-		if (RoadGeneratorHelper::maxZ(replacementGraph, vboRenderManager) >= 70.0f && RoadGeneratorHelper::diffZ(replacementGraph, vboRenderManager) > 7.0f) {
-			/*
-			float max_rotation = G::getFloat("rotationForSteepSlope");
-			float min_dz = std::numeric_limits<float>::max();
-			float min_angle;
+		// streetの場合は、example_street_descにしないといけないか？
+		// いや、大丈夫。streetのパッチは、元のgraphの頂点IDを、やはりexample_descに格納しているから。
+		ex_v_desc = patches[patch_id].roads.graph[root_desc]->properties["example_desc"].toUInt();
 
-			// try the right turn
-			for (float th = angle; th <= angle + max_rotation; th += 0.1f) {
-				buildReplacementGraphByExample(roadType, replacementGraph, srcDesc, f.reducedRoads(roadType), ex_v_desc, th, shapes[shape_index]);
-				float dz = RoadGeneratorHelper::diffZ(replacementGraph, vboRenderManager);
-				if (dz < min_dz) {
-					min_dz = dz;
-					min_angle = th;
-				}
-			}
 
-			// try the left turn
-			for (float th = angle; th >= angle - max_rotation; th -= 0.1f) {
-				buildReplacementGraphByExample(roadType, replacementGraph, srcDesc, f.reducedRoads(roadType), ex_v_desc, th, shapes[shape_index]);
-				float dz = RoadGeneratorHelper::diffZ(replacementGraph, vboRenderManager);
-				if (dz < min_dz) {
-					min_dz = dz;
-					min_angle = th;
-				}
-			}
+		buildReplacementGraphByExample(roadType, replacementGraph, srcDesc, f.reducedRoads(roadType), ex_v_desc, angle, patches[patch_id], patch_id, connect_desc);
 
-			buildReplacementGraphByExample(roadType, replacementGraph, srcDesc, f.reducedRoads(roadType), ex_v_desc, min_angle, shapes[shape_index]);
-			*/
-			return false;
-		}
-
-		if (!RoadGeneratorHelper::submerged(roadType, replacementGraph, vboRenderManager) && isValidRule(srcDesc, replacementGraph)) {
-			rewrite(roadType, srcDesc, replacementGraph, seeds);
-		} else {
-			return false;
-		}
-
-		/*
-		if (isValidRule(srcDesc, replacementGraph)) {
-			rewrite(roadType, srcDesc, replacementGraph, seeds);
-		}
-		*/
 	} else {
-		float roadSnapFactor = G::getFloat("roadSnapFactor");
-		float roadAngleTolerance = G::getFloat("roadAngleTolerance");
-
-		RoadOutEdgeIter ei, eend;
-		for (boost::tie(ei, eend) = boost::out_edges(ex_v_desc, f.reducedRoads(roadType).graph); ei != eend; ++ei) {
-			RoadVertexDesc tgt = boost::target(*ei, f.reducedRoads(roadType).graph);
-
-			Polyline2D polyline = GraphUtil::orderPolyLine(f.reducedRoads(roadType), *ei, ex_v_desc);
-
-			QVector2D offset = polyline[0];
-			polyline.translate(offset * -1.0f);
-			polyline.rotate(-Util::rad2deg(angle));
-
-			if (RoadGeneratorHelper::isRedundantEdge(roads, srcDesc, polyline, 0.01f)) continue;
-
-			growRoadSegment(roadType, srcDesc, f, polyline, f.reducedRoads(roadType).graph[*ei]->lanes, tgt, true, roadSnapFactor, roadAngleTolerance, seeds);
+		if (patch_id < 0) {
+			printf("ERROR!!!!!!!!!!!!!!");
 		}
+	
+		buildReplacementGraphByExample(roadType, replacementGraph, srcDesc, f.reducedRoads(roadType), ex_v_desc, angle, patches[patch_id], patch_id);
 	}
+	
+
+	rewrite(roadType, srcDesc, replacementGraph, seeds);
 
 	return true;
 }
 
-void PatchMultiIntExRoadGenerator::buildReplacementGraphByExample(int roadType, RoadGraph &replacementGraph, RoadVertexDesc srcDesc, RoadGraph &exRoads, RoadVertexDesc ex_srcDesc, float angle, RoadEdgeDescs &shape) {
+void PatchRoadGenerator::buildReplacementGraphByExample(int roadType, RoadGraph &replacementGraph, RoadVertexDesc srcDesc, RoadGraph &exRoads, RoadVertexDesc ex_srcDesc, float angle, Patch &patch, int patchId) {
 	replacementGraph.clear();
 
 	QMap<RoadVertexDesc, RoadVertexDesc> conv;
 
-	// add vertices of the interesting shape
+	// add vertices of the patch
 	{
-		QHash<RoadVertexDesc, bool> vertices;
+		RoadVertexIter vi, vend;
+		for (boost::tie(vi, vend) = boost::vertices(patch.roads.graph); vi != vend; ++vi) {
+			if (patch.roads.graph[*vi]->onBoundary) {
+				int xxx = 0;
+			}
 
-		for (int i = 0; i < shape.size(); ++i) {
-			RoadVertexDesc src = boost::source(shape[i], exRoads.graph);
-			RoadVertexDesc tgt = boost::target(shape[i], exRoads.graph);
-
-			vertices[src] = true;
-			vertices[tgt] = true;
-		}
-
-		for (QHash<RoadVertexDesc, bool>::iterator it = vertices.begin(); it != vertices.end(); ++it) {
 			// Transformした後の座標を計算
-			QVector2D pt = Util::transform(exRoads.graph[it.key()]->pt, exRoads.graph[ex_srcDesc]->pt, angle, roads.graph[srcDesc]->pt);
+			QVector2D pt = Util::transform(patch.roads.graph[*vi]->pt, exRoads.graph[ex_srcDesc]->pt, angle, roads.graph[srcDesc]->pt);
 
-			RoadVertexPtr v = RoadVertexPtr(new RoadVertex(pt));
-			v->onBoundary = exRoads.graph[it.key()]->onBoundary;
+			RoadVertexPtr v = RoadVertexPtr(new RoadVertex(*patch.roads.graph[*vi]));
+			v->pt = pt;
+			v->properties["rotation_angle"] = angle;
+			v->properties["ex_id"] = roads.graph[srcDesc]->properties["ex_id"];
+			v->properties["group_id"] = roads.graph[srcDesc]->properties["group_id"];
+			if (v->patchId != patchId) {
+				int xxxx = 0;
+			}
+			v->patchId = patchId;
+
+			// 元のExampleで境界上の頂点だったかどうかは、ターゲットエリアでは関係ないので、一旦リセットする
+			v->onBoundary = false;
+
 			RoadVertexDesc v_desc = GraphUtil::addVertex(replacementGraph, v);
-			replacementGraph.graph[v_desc]->properties["generation_type"] = roads.graph[srcDesc]->properties["generation_type"];
-			if (roadType == RoadEdge::TYPE_AVENUE) {
-				replacementGraph.graph[v_desc]->properties["example_desc"] = it.key();
-			} else {
-				replacementGraph.graph[v_desc]->properties["example_street_desc"] = it.key();
-			}
-			replacementGraph.graph[v_desc]->properties["group_id"] = roads.graph[srcDesc]->properties["group_id"];
-			replacementGraph.graph[v_desc]->properties["ex_id"] = roads.graph[srcDesc]->properties["ex_id"];
-			replacementGraph.graph[v_desc]->properties["shape"] = true;
-			replacementGraph.graph[v_desc]->properties["rotation_angle"] = angle;//roads.graph[srcDesc]->properties["rotation_angle"];
-			if (GraphUtil::getDegree(exRoads, it.key()) == 1) {
-				int xxx = 0;
-			}
-			replacementGraph.graph[v_desc]->properties["deadend"] = GraphUtil::getDegree(exRoads, it.key()) == 1 && !exRoads.graph[it.key()]->onBoundary;
-			if (replacementGraph.graph[v_desc]->properties["deadend"] == true) {
-				int xxx = 0;
-			}
-			conv[it.key()] = v_desc;
+			conv[*vi] = v_desc;
 		}
 	}
 
-	// interesting shapeのエッジを追加
+	// patchのエッジを追加
 	{
-		for (int i = 0; i < shape.size(); ++i) {
-			RoadVertexDesc src = boost::source(shape[i], exRoads.graph);
-			RoadVertexDesc tgt = boost::target(shape[i], exRoads.graph);
+		RoadEdgeIter ei, eend;
+		for (boost::tie(ei, eend) = boost::edges(patch.roads.graph); ei != eend; ++ei) {
+			RoadVertexDesc src = boost::source(*ei, patch.roads.graph);
+			RoadVertexDesc tgt = boost::target(*ei, patch.roads.graph);
 
-			RoadEdgePtr edge = RoadEdgePtr(new RoadEdge(*exRoads.graph[shape[i]]));
+			RoadEdgePtr edge = RoadEdgePtr(new RoadEdge(*patch.roads.graph[*ei]));
 
 			// エッジを座標変換する
 			edge->polyline.translate(-exRoads.graph[ex_srcDesc]->pt);
@@ -417,15 +370,99 @@ void PatchMultiIntExRoadGenerator::buildReplacementGraphByExample(int roadType, 
 			edge->polyline.translate(roads.graph[srcDesc]->pt);
 
 			RoadEdgeDesc e_desc = GraphUtil::addEdge(replacementGraph, conv[src], conv[tgt], edge);
-			replacementGraph.graph[e_desc]->properties["generation_type"] = roads.graph[srcDesc]->properties["generation_type"];
-			replacementGraph.graph[e_desc]->properties["group_id"] = roads.graph[srcDesc]->properties["group_id"];
-			replacementGraph.graph[e_desc]->properties["ex_id"] = roads.graph[srcDesc]->properties["ex_id"];
-			replacementGraph.graph[e_desc]->properties["shape"] = true;
 		}
 	}
 }
 
-void PatchMultiIntExRoadGenerator::rewrite(int roadType, RoadVertexDesc srcDesc, RoadGraph &replacementGraph, std::list<RoadVertexDesc>& seeds) {
+void PatchRoadGenerator::buildReplacementGraphByExample(int roadType, RoadGraph &replacementGraph, RoadVertexDesc srcDesc, RoadGraph &exRoads, RoadVertexDesc ex_srcDesc, float angle, Patch &patch, int patchId, RoadVertexDesc v_connect) {
+	replacementGraph.clear();
+
+	QMap<RoadVertexDesc, RoadVertexDesc> conv;
+	RoadVertexDesc connector_desc;
+
+	// add vertices of the patch
+	{
+		RoadVertexIter vi, vend;
+		for (boost::tie(vi, vend) = boost::vertices(patch.roads.graph); vi != vend; ++vi) {
+			if (patch.roads.graph[*vi]->onBoundary) {
+				int xxx = 0;
+			}
+
+			// Transformした後の座標を計算
+			QVector2D pt = Util::transform(patch.roads.graph[*vi]->pt, exRoads.graph[ex_srcDesc]->pt, angle, roads.graph[srcDesc]->pt);
+
+			RoadVertexPtr v = RoadVertexPtr(new RoadVertex(*patch.roads.graph[*vi]));
+			v->pt = pt;
+			v->properties["rotation_angle"] = angle;
+			v->properties["ex_id"] = roads.graph[srcDesc]->properties["ex_id"];
+			v->properties["group_id"] = roads.graph[srcDesc]->properties["group_id"];
+			if (v->patchId != patchId) {
+				int xxxx = 0;
+			}
+			v->patchId = patchId;
+
+			// 元のExampleで境界上の頂点だったかどうかは、ターゲットエリアでは関係ないので、一旦リセットする
+			v->onBoundary = false;
+
+			RoadVertexDesc v_desc = GraphUtil::addVertex(replacementGraph, v);
+			conv[*vi] = v_desc;
+
+			if (*vi == v_connect) {
+				connector_desc = v_desc;
+			}
+		}
+	}
+
+	// patchのエッジを追加
+	{
+		RoadEdgeIter ei, eend;
+		for (boost::tie(ei, eend) = boost::edges(patch.roads.graph); ei != eend; ++ei) {
+			RoadVertexDesc src = boost::source(*ei, patch.roads.graph);
+			RoadVertexDesc tgt = boost::target(*ei, patch.roads.graph);
+
+			RoadEdgePtr edge = RoadEdgePtr(new RoadEdge(*patch.roads.graph[*ei]));
+
+			// エッジを座標変換する
+			edge->polyline.translate(-exRoads.graph[ex_srcDesc]->pt);
+			edge->polyline.rotate(Util::rad2deg(-angle));
+			edge->polyline.translate(roads.graph[srcDesc]->pt);
+
+			RoadEdgeDesc e_desc = GraphUtil::addEdge(replacementGraph, conv[src], conv[tgt], edge);
+		}
+	}
+
+	// 指定されたコネクタからのエッジを削除
+	{
+		QMap<RoadVertexDesc, bool> visited;
+		std::list<RoadVertexDesc> queue;
+		queue.push_back(connector_desc);
+
+		while (!queue.empty()) {
+			RoadVertexDesc v = queue.front();
+			queue.pop_front();
+
+			RoadOutEdgeIter ei, eend;
+			for (boost::tie(ei, eend) = boost::out_edges(v, replacementGraph.graph); ei != eend; ++ei) {
+				if (!replacementGraph.graph[*ei]->valid) continue;
+
+				replacementGraph.graph[*ei]->valid = false;
+
+				RoadVertexDesc tgt = boost::target(*ei, replacementGraph.graph);
+				if (visited[tgt]) continue;
+
+				// 上で既に一本のエッジを無効にしているので、もともとdegree=2の頂点は、残り一本だけエッジが残っているはず。
+				// なので、 == 2　ではなく、 == 1　とする。
+				if (GraphUtil::getDegree(replacementGraph, tgt) == 1) {
+					queue.push_back(tgt);
+				}
+			}
+		}
+	}
+
+	GraphUtil::clean(replacementGraph);
+}
+
+void PatchRoadGenerator::rewrite(int roadType, RoadVertexDesc srcDesc, RoadGraph &replacementGraph, std::list<RoadVertexDesc>& seeds) {
 	QMap<RoadVertexDesc, RoadVertexDesc> conv;
 
 	// add vertices
@@ -438,13 +475,6 @@ void PatchMultiIntExRoadGenerator::rewrite(int roadType, RoadVertexDesc srcDesc,
 			RoadVertexDesc v_desc;
 			if (!GraphUtil::getVertex(roads, replacementGraph.graph[*vi]->pt, 1.0f, v_desc)) {
 				v_desc = GraphUtil::addVertex(roads, v);
-
-				// if this vertex is on the boundary, then the example-based cannot be applied for the further generation from this.
-				if (replacementGraph.graph[*vi]->onBoundary) {
-					roads.graph[v_desc]->properties["generation_type"] = "mixed";
-					roads.graph[v_desc]->properties.remove("example_desc");
-					roads.graph[v_desc]->properties.remove("rotation_angle");
-				}
 			} else {
 				roads.graph[v_desc]->properties = replacementGraph.graph[*vi]->properties;
 
@@ -455,10 +485,9 @@ void PatchMultiIntExRoadGenerator::rewrite(int roadType, RoadVertexDesc srcDesc,
 			}
 
 			// if the vertex is a dead end, then, it will be added to the seeds.
-			if (GraphUtil::getDegree(replacementGraph, *vi) == 1 && replacementGraph.graph[*vi]->properties["deadend"] == false) {
+			if (GraphUtil::getDegree(replacementGraph, *vi) == 1 && replacementGraph.graph[*vi]->deadend == false) {
 				seeds.push_back(v_desc);
 			}
-
 
 			conv[*vi] = v_desc;
 		}
@@ -481,7 +510,7 @@ void PatchMultiIntExRoadGenerator::rewrite(int roadType, RoadVertexDesc srcDesc,
 	}
 }
 
-bool PatchMultiIntExRoadGenerator::isValidRule(RoadVertexDesc srcDesc, RoadGraph &replacementGraph) {
+bool PatchRoadGenerator::isValidRule(RoadVertexDesc srcDesc, RoadGraph &replacementGraph) {
 	RoadEdgeIter ei, eend;
 	for (boost::tie(ei, eend) = edges(roads.graph); ei != eend; ++ei) {
 		if (!roads.graph[*ei]->valid) continue;
@@ -501,7 +530,7 @@ bool PatchMultiIntExRoadGenerator::isValidRule(RoadVertexDesc srcDesc, RoadGraph
 /**
  * このシードを使って、PM方式で道路生成する。
  */
-void PatchMultiIntExRoadGenerator::attemptExpansion2(int roadType, RoadVertexDesc srcDesc, ExFeature& f, std::vector<RoadEdgeDescs> &shapes, std::list<RoadVertexDesc> &seeds) {
+void PatchRoadGenerator::attemptExpansion2(int roadType, RoadVertexDesc srcDesc, ExFeature& f, std::vector<RoadEdgeDescs> &shapes, std::list<RoadVertexDesc> &seeds) {
 	float snapThreshold;
 
 	if (roadType == RoadEdge::TYPE_AVENUE) {
@@ -637,7 +666,7 @@ void PatchMultiIntExRoadGenerator::attemptExpansion2(int roadType, RoadVertexDes
 /**
  * このシードを使って、コスト関数に基づいて選ばれたパッチを使って、道路をgrowさせる。
  */
-void PatchMultiIntExRoadGenerator::attemptExpansion3(int roadType, RoadVertexDesc srcDesc, ExFeature& f, RoadGraph &exRoads, std::vector<RoadEdgeDescs> &shapes, std::list<RoadVertexDesc> &seeds) {
+void PatchRoadGenerator::attemptExpansion3(int roadType, RoadVertexDesc srcDesc, ExFeature& f, RoadGraph &exRoads, std::vector<RoadEdgeDescs> &shapes, std::list<RoadVertexDesc> &seeds) {
 	float snapThreshold;
 
 	if (roadType == RoadEdge::TYPE_AVENUE) {
@@ -785,7 +814,7 @@ void PatchMultiIntExRoadGenerator::attemptExpansion3(int roadType, RoadVertexDes
  * 指定されたpolylineに従って、srcDesc頂点からエッジを伸ばす。
  * エッジの端点が、srcDescとは違うセルに入る場合は、falseを返却する。
  */
-bool PatchMultiIntExRoadGenerator::growRoadSegment(int roadType, RoadVertexDesc srcDesc, ExFeature& f, const Polyline2D &polyline, int lanes, RoadVertexDesc next_ex_v_desc, bool byExample, float snapFactor, float angleTolerance, std::list<RoadVertexDesc> &seeds) {
+bool PatchRoadGenerator::growRoadSegment(int roadType, RoadVertexDesc srcDesc, ExFeature& f, const Polyline2D &polyline, int lanes, RoadVertexDesc next_ex_v_desc, bool byExample, float snapFactor, float angleTolerance, std::list<RoadVertexDesc> &seeds) {
 	float sigma2 = SQR(G::getFloat("interpolationSigma1"));
 	float threshold1 = G::getFloat("interpolationThreshold1");
 
@@ -1003,7 +1032,7 @@ bool PatchMultiIntExRoadGenerator::growRoadSegment(int roadType, RoadVertexDesc 
 /**
  * PMに従って、カーネルを合成する
  */
-std::pair<int, RoadVertexDesc> PatchMultiIntExRoadGenerator::synthesizeItem(int roadType, RoadVertexDesc v_desc, std::vector<RoadEdgeDescs> &shapes, std::vector<RoadEdgePtr> &edges, float &rotation_angle) {
+std::pair<int, RoadVertexDesc> PatchRoadGenerator::synthesizeItem(int roadType, RoadVertexDesc v_desc, std::vector<RoadEdgeDescs> &shapes, std::vector<RoadEdgePtr> &edges, float &rotation_angle) {
 	BBox bbox = targetArea.envelope();
 	float D2 = bbox.area();
 
@@ -1079,7 +1108,7 @@ std::pair<int, RoadVertexDesc> PatchMultiIntExRoadGenerator::synthesizeItem(int 
 /**
  * エッジのジオミトリを、exampleに置換する
  */
-void PatchMultiIntExRoadGenerator::replaceEdgeByExample(ExFeature &f, int roadType, RoadEdgePtr edge) {
+void PatchRoadGenerator::replaceEdgeByExample(ExFeature &f, int roadType, RoadEdgePtr edge) {
 	float length = edge->getLength();
 
 	float min_diff = std::numeric_limits<float>::max();
@@ -1111,3 +1140,46 @@ void PatchMultiIntExRoadGenerator::replaceEdgeByExample(ExFeature &f, int roadTy
 
 	edge->polyline = GraphUtil::finerEdge(edge->polyline, 10.0f);
 }
+
+void PatchRoadGenerator::saveRoadImage(RoadGraph& roads, const char* filename) {
+	BBox bbox = GraphUtil::getAABoundingBox(roads);
+	cv::Mat img(bbox.dy() + 1, bbox.dx() + 1, CV_8UC3, cv::Scalar(0, 0, 0));
+
+	RoadEdgeIter ei, eend;
+	for (boost::tie(ei, eend) = boost::edges(roads.graph); ei != eend; ++ei) {
+		if (!roads.graph[*ei]->valid) continue;
+
+		for (int pl = 0; pl < roads.graph[*ei]->polyline.size() - 1; ++pl) {
+			int x1 = roads.graph[*ei]->polyline[pl].x() - bbox.minPt.x();
+			int y1 = img.rows - (roads.graph[*ei]->polyline[pl].y() - bbox.minPt.y());
+			int x2 = roads.graph[*ei]->polyline[pl + 1].x() - bbox.minPt.x();
+			int y2 = img.rows - (roads.graph[*ei]->polyline[pl + 1].y() - bbox.minPt.y());
+			cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(128, 128, 128), 3);
+		}
+	}
+
+	RoadVertexIter vi, vend;
+	for (boost::tie(vi, vend) = boost::vertices(roads.graph); vi != vend; ++vi) {
+		if (!roads.graph[*vi]->valid) continue;
+
+		int x = roads.graph[*vi]->pt.x() - bbox.minPt.x();
+		int y = img.rows - (roads.graph[*vi]->pt.y() - bbox.minPt.y());
+
+		// onBoundaryを描画
+		if (roads.graph[*vi]->onBoundary) {
+			cv::circle(img, cv::Point(x, y), 10, cv::Scalar(0, 255, 255), 3);
+		}
+
+		// deadendを描画
+		if (roads.graph[*vi]->deadend) {
+			cv::circle(img, cv::Point(x, y), 10, cv::Scalar(0, 0, 255), 3);
+		}
+
+		// 頂点IDを描画
+		QString str = QString::number(*vi);
+		cv::putText(img, str.toUtf8().data(), cv::Point(x, y), cv::FONT_HERSHEY_SCRIPT_SIMPLEX, 0.5, cv::Scalar(255, 255, 255), 1);
+	}
+
+	cv::imwrite(filename, img);
+}
+

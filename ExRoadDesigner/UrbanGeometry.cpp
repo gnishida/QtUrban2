@@ -22,6 +22,7 @@ This file is part of QtUrban.
 #include "global.h"
 #include "RendererHelper.h"
 #include "GraphUtil.h"
+#include "PatchRoadGenerator.h"
 #include "PatchMultiIntExRoadGenerator.h"
 #include "PatchWarpRoadGenerator.h"
 #include "PatchWarp2RoadGenerator.h"
@@ -63,6 +64,21 @@ void UrbanGeometry::clearGeometry() {
 	}
 	blocks.clear();
 	*/
+}
+
+void UrbanGeometry::generateRoadsTest(std::vector<ExFeature> &features) {
+	if (areas.selectedIndex == -1) return;
+	if (areas.selectedArea()->hintLine.size() == 0) return;
+
+	if (G::getBool("useLayer")) {
+		PatchRoadGenerator generator(mainWin, areas.selectedArea()->roads, areas.selectedArea()->area, areas.selectedArea()->hintLine, &mainWin->glWidget->vboRenderManager, features);
+		generator.generateRoadNetwork();
+		areas.selectedArea()->roads.adaptToTerrain(&mainWin->glWidget->vboRenderManager);
+	} else {
+		PatchRoadGenerator generator(mainWin, roads, areas.selectedArea()->area, areas.selectedArea()->hintLine, &mainWin->glWidget->vboRenderManager, features);
+		generator.generateRoadNetwork();
+		roads.adaptToTerrain(&mainWin->glWidget->vboRenderManager);
+	}
 }
 
 void UrbanGeometry::generateRoadsPatchMulti(std::vector<ExFeature> &features) {

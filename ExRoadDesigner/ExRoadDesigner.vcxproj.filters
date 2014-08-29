@@ -352,6 +352,12 @@
     <ClCompile Include="GeneratedFiles\Release\moc_RotationVideoSettingDialog.cpp">
       <Filter>Generated Files\Release</Filter>
     </ClCompile>
+    <ClCompile Include="Patch.cpp">
+      <Filter>road</Filter>
+    </ClCompile>
+    <ClCompile Include="PatchRoadGenerator.cpp">
+      <Filter>road generator</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="MainWindow.ui">
@@ -673,6 +679,12 @@
     </ClInclude>
     <ClInclude Include="GeneratedFiles\ui_RotationVideoSettingDialog.h">
       <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Patch.h">
+      <Filter>road</Filter>
+    </ClInclude>
+    <ClInclude Include="PatchRoadGenerator.h">
+      <Filter>road generator</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

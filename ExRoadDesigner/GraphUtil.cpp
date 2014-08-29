@@ -1465,6 +1465,88 @@ RoadVertexDesc GraphUtil::cutoffEdge(RoadGraph &roads, RoadEdgeDesc edge, RoadVe
 }
 
 /**
+ * 指定された頂点に接続されたエッジのpolylineを取得する。
+ * 隣接頂点のdegreeが2の場合は、その先のエッジも含めたpolylineを取得する。
+ */
+Polyline2D GraphUtil::getAdjoiningPolyline(RoadGraph& roads, RoadVertexDesc v_desc) {
+	Polyline2D polyline;
+	polyline.push_back(roads.graph[v_desc]->pt);
+
+	QMap<RoadVertexDesc, bool> visited;
+	std::list<RoadVertexDesc> queue;
+	queue.push_back(v_desc);
+	visited[v_desc] = true;
+
+	while (!queue.empty()) {
+		RoadVertexDesc v = queue.front();
+		queue.pop_front();
+
+		RoadOutEdgeIter ei, eend;
+		for (boost::tie(ei, eend) = boost::out_edges(v, roads.graph); ei != eend; ++ei) {
+			RoadVertexDesc tgt = boost::target(*ei, roads.graph);
+			if (visited[tgt]) continue;
+
+			visited[tgt] = true;
+
+			Polyline2D p = GraphUtil::orderPolyLine(roads, *ei, v);
+			polyline.insert(polyline.end(), p.begin() + 1, p.end());
+
+			if (GraphUtil::getDegree(roads, tgt) == 2) {
+				queue.push_back(tgt);
+			}
+
+			break;
+		}
+
+	}
+
+	return polyline;
+}
+
+/**
+ * 指定された頂点に接続されたエッジのpolylineを取得する。
+ * 隣接頂点のdegreeが2の場合は、その先のエッジも含めたpolylineを取得する。
+ */
+Polyline2D GraphUtil::getAdjoiningPolyline(RoadGraph& roads, RoadVertexDesc v_desc, RoadVertexDesc& root_desc) {
+	Polyline2D polyline;
+	polyline.push_back(roads.graph[v_desc]->pt);
+
+	QMap<RoadVertexDesc, bool> visited;
+	std::list<RoadVertexDesc> queue;
+	queue.push_back(v_desc);
+	visited[v_desc] = true;
+
+	while (!queue.empty()) {
+		RoadVertexDesc v = queue.front();
+		queue.pop_front();
+
+		RoadOutEdgeIter ei, eend;
+		for (boost::tie(ei, eend) = boost::out_edges(v, roads.graph); ei != eend; ++ei) {
+			if (!roads.graph[*ei]->valid) continue;
+
+			RoadVertexDesc tgt = boost::target(*ei, roads.graph);
+			if (visited[tgt]) continue;
+
+			visited[tgt] = true;
+
+			Polyline2D p = GraphUtil::orderPolyLine(roads, *ei, v);
+			polyline.insert(polyline.end(), p.begin() + 1, p.end());
+
+			if (GraphUtil::getDegree(roads, tgt) == 2) {
+				queue.push_back(tgt);
+			} else {
+				root_desc = tgt;
+			}
+
+			break;
+		}
+
+	}
+
+	return polyline;
+}
+
+/**
  * Load the road from a file.
  */
 void GraphUtil::loadRoads(RoadGraph& roads, const QString& filename, int roadType) {

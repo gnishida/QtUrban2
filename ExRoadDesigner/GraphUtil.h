@@ -80,6 +80,8 @@ public:
 	static bool isStraightEdge(RoadGraph &roads, RoadVertexDesc v, RoadEdgeDesc e);
 	static bool isPotentiallyStraightEdge(RoadGraph &roads, RoadVertexDesc v, RoadEdgeDesc e);
 	static RoadVertexDesc cutoffEdge(RoadGraph &roads, RoadEdgeDesc edge, RoadVertexDesc v_desc, const QVector2D &pt);
+	static Polyline2D getAdjoiningPolyline(RoadGraph& roads, RoadVertexDesc v_desc);
+	static Polyline2D getAdjoiningPolyline(RoadGraph& roads, RoadVertexDesc v_desc, RoadVertexDesc& root_desc);
 
 	// File I/O
 	static void loadRoads(RoadGraph& roads, const QString& filename, int roadType = 0);

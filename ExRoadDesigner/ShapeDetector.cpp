@@ -2,6 +2,7 @@
 #include "GraphUtil.h"
 #include <QHash>
 #include "CircleHoughTransform.h"
+#include "RoadGeneratorHelper.h"
 
 std::vector<RoadEdgeDescs> ShapeDetector::detect(RoadGraph &roads, float scale, float threshold) {
 	float threshold2 = SQR(threshold);
@@ -23,6 +24,10 @@ std::vector<RoadEdgeDescs> ShapeDetector::detect(RoadGraph &roads, float scale, 
 			usedVertices[src] = true;
 			usedVertices[tgt] = true;
 			usedEdges[shapes[i][j]] = 2;
+
+			// パッチIDを、属する頂点に設定する
+			roads.graph[src]->patchId = i;
+			roads.graph[tgt]->patchId = i;
 		}
 	}
 	time_t end = clock();
@@ -30,7 +35,7 @@ std::vector<RoadEdgeDescs> ShapeDetector::detect(RoadGraph &roads, float scale, 
 
 	// expand circles
 	for (int i = 0; i < shapes.size(); ++i) {
-		addVerticesToCircle(roads, shapes[i], threshold, usedVertices, usedEdges);
+		addVerticesToCircle(roads, shapes[i], i, threshold, usedVertices, usedEdges);
 	}
 	
 	// detect close vertices
@@ -45,19 +50,21 @@ std::vector<RoadEdgeDescs> ShapeDetector::detect(RoadGraph &roads, float scale, 
 			if (GraphUtil::getDegree(roads, *vi) <= 2) continue;
 
 			std::vector<RoadEdgeDesc> shape;
-			addVerticesToGroup(roads, *vi, threshold, shape, usedVertices, usedEdges);
+			addVerticesToGroup(roads, *vi, shapes.size(), threshold, shape, usedVertices, usedEdges);
 			shapes.push_back(shape);
 		}
 		time_t end = clock();
 		std::cout << "Close vertices detection: " << (double)(end - start) / CLOCKS_PER_SEC << " [sec]" << std::endl;
 	}
 
-	savePatchImages(roads, shapes);
+
+
+	//savePatchImages(roads, shapes);
 
 	return shapes;
 }
 
-void ShapeDetector::addVerticesToCircle(RoadGraph &roads, RoadEdgeDescs& shape, float threshold, QMap<RoadVertexDesc, bool> &usedVertices, QMap<RoadEdgeDesc, int> &usedEdges) {
+void ShapeDetector::addVerticesToCircle(RoadGraph &roads, RoadEdgeDescs& shape, int patchId, float threshold, QMap<RoadVertexDesc, bool> &usedVertices, QMap<RoadEdgeDesc, int> &usedEdges) {
 	float threshold2 = SQR(threshold);
 
 	std::list<RoadVertexDesc> queue;
@@ -104,9 +111,18 @@ void ShapeDetector::addVerticesToCircle(RoadGraph &roads, RoadEdgeDescs& shape, 
 
 				if (GraphUtil::getDegree(roads, tgt) <= 2) {
 					roads.graph[tgt]->properties["length"] = roads.graph[desc]->properties["length"].toFloat() + roads.graph[*ei]->polyline.length();
+
+					// この頂点は、複数のパッチに属する可能性があるので、パッチIDが未設定の場合だけセットする
+					// ただし、境界上の頂点には、パッチIDをセットしない。なぜなら、境界上の頂点は、対応するパッチがないから！！
+					if (roads.graph[tgt]->patchId < 0 && !roads.graph[tgt]->onBoundary) {
+						roads.graph[tgt]->patchId = patchId;
+					}
 				} else {
 					roads.graph[tgt]->properties["length"] = 0.0f;
 					usedVertices[tgt] = true;
+
+					// パッチIDをセットする
+					roads.graph[tgt]->patchId = patchId;
 				}
 			}
 		}
@@ -118,7 +134,7 @@ void ShapeDetector::addVerticesToCircle(RoadGraph &roads, RoadEdgeDescs& shape, 
 	}
 }
 
-void ShapeDetector::addVerticesToGroup(RoadGraph &roads, RoadVertexDesc srcDesc, float threshold, RoadEdgeDescs &shape, QMap<RoadVertexDesc, bool> &usedVertices, QMap<RoadEdgeDesc, int> &usedEdges) {
+void ShapeDetector::addVerticesToGroup(RoadGraph &roads, RoadVertexDesc srcDesc, int patchId, float threshold, RoadEdgeDescs &shape, QMap<RoadVertexDesc, bool> &usedVertices, QMap<RoadEdgeDesc, int> &usedEdges) {
 	std::cout << "shape is detected..." << srcDesc << std::endl;
 
 	// パッチに含まれるエッジのセット
@@ -131,6 +147,9 @@ void ShapeDetector::addVerticesToGroup(RoadGraph &roads, RoadVertexDesc srcDesc,
 	usedVertices[srcDesc] = true;
 	visited[srcDesc] = true;
 	roads.graph[srcDesc]->properties["length"] = 0.0f;
+
+	// パッチIDをセットする
+	roads.graph[srcDesc]->patchId = patchId;
 
 	while (!queue.empty()) {
 		RoadVertexDesc desc = queue.front();
@@ -153,25 +172,19 @@ void ShapeDetector::addVerticesToGroup(RoadGraph &roads, RoadVertexDesc srcDesc,
 
 				if (GraphUtil::getDegree(roads, tgt) <= 2) {
 					roads.graph[tgt]->properties["length"] = roads.graph[desc]->properties["length"].toFloat() + roads.graph[*ei]->polyline.length();
+
+					// この頂点は、複数のパッチに属する可能性があるので、パッチIDが未設定の場合だけセットする
+					// // ただし、境界上の頂点には、パッチIDをセットしない。なぜなら、境界上の頂点は、対応するパッチがないから！！
+					if (roads.graph[tgt]->patchId < 0 && !roads.graph[tgt]->onBoundary) {
+						roads.graph[tgt]->patchId = patchId;
+					}
 				} else {
 					roads.graph[tgt]->properties["length"] = 0.0f;
 					usedVertices[tgt] = true;
-				}
 
-				/*
-				// GEN 2014/8/26 fixed the bug
-				if (usedEdges.contains(*ei)) {
-					usedEdges[*ei]++;
-				} else {
-					usedEdges[*ei] = 1;
+					// パッチIDをセットする
+					roads.graph[tgt]->patchId = patchId;
 				}
-				usedVertices[tgt] = true;
-
-				if (!vertex_descs.contains(tgt)) {				
-					queue.push_back(tgt);
-					vertex_descs[tgt] = true;
-				}
-				*/
 			}
 		}
 	}
