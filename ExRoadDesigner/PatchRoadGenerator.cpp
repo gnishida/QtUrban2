@@ -474,7 +474,13 @@ void PatchRoadGenerator::rewrite(int roadType, RoadVertexDesc srcDesc, RoadGraph
 			RoadVertexPtr v = RoadVertexPtr(new RoadVertex(*replacementGraph.graph[*vi]));
 			RoadVertexDesc v_desc;
 			if (!GraphUtil::getVertex(roads, replacementGraph.graph[*vi]->pt, 1.0f, v_desc)) {
+				// 頂点を新規追加
 				v_desc = GraphUtil::addVertex(roads, v);
+
+				// 新規追加された頂点について、もとのreplacementGraphでdegree==1で、deadendでないなら、シードに追加
+				if (GraphUtil::getDegree(replacementGraph, *vi) == 1 && replacementGraph.graph[*vi]->deadend == false) {
+					seeds.push_back(v_desc);
+				}
 			} else {
 				roads.graph[v_desc]->properties = replacementGraph.graph[*vi]->properties;
 
@@ -482,11 +488,6 @@ void PatchRoadGenerator::rewrite(int roadType, RoadVertexDesc srcDesc, RoadGraph
 				//if (GraphUtil::getDegree(roads, v_desc) == 0) {
 				//	seeds.push_back(v_desc);
 				//}
-			}
-
-			// if the vertex is a dead end, then, it will be added to the seeds.
-			if (GraphUtil::getDegree(replacementGraph, *vi) == 1 && replacementGraph.graph[*vi]->deadend == false) {
-				seeds.push_back(v_desc);
 			}
 
 			conv[*vi] = v_desc;
