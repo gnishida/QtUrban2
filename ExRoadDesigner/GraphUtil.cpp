@@ -594,7 +594,8 @@ bool GraphUtil::getCloseEdge(RoadGraph& roads, RoadVertexDesc srcDesc, float dis
 		angle += 3.14159265 * 2.0f;
 	}
 
-	float min_dist = std::numeric_limits<float>::max();
+	float min_dist = distance_threshold;
+	bool found = false;
 
 	RoadEdgeIter ei, eend;
 	for (boost::tie(ei, eend) = boost::edges(roads.graph); ei != eend; ++ei) {
@@ -615,14 +616,14 @@ bool GraphUtil::getCloseEdge(RoadGraph& roads, RoadVertexDesc srcDesc, float dis
 			float dist = GraphUtil::distance(roads, roads.graph[srcDesc]->pt, *ei, pt);
 			if (dist < min_dist) {
 				min_dist = dist;
+				found = true;
 				nearest_desc = *ei;
 				nearestPt = pt;
 			}
 		}
 	}
 
-	if (min_dist < std::numeric_limits<float>::max()) return true;
-	else return false;
+	return found;
 }
 
 /**
