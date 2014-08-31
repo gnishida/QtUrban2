@@ -589,6 +589,42 @@ RoadEdgeDesc GraphUtil::getEdge(RoadGraph& roads, int index, bool onlyValidEdge)
 	throw "No edge found for the specified index.";
 }
 
+bool GraphUtil::getCloseEdge(RoadGraph& roads, RoadVertexDesc srcDesc, float distance_threshold, float angle, float angle_threshold, RoadEdgeDesc& nearest_desc, QVector2D& nearestPt, bool onlyValidEdge) {
+	if (angle < 0) {
+		angle += 3.14159265 * 2.0f;
+	}
+
+	float min_dist = std::numeric_limits<float>::max();
+
+	RoadEdgeIter ei, eend;
+	for (boost::tie(ei, eend) = boost::edges(roads.graph); ei != eend; ++ei) {
+		if (onlyValidEdge && !roads.graph[*ei]) continue;
+
+		RoadVertexDesc src = boost::source(*ei, roads.graph);
+		RoadVertexDesc tgt = boost::target(*ei, roads.graph);
+
+		if (src == srcDesc || tgt == srcDesc) continue;
+
+		QVector2D vec1 = roads.graph[src]->pt - roads.graph[srcDesc]->pt;
+		QVector2D vec2 = roads.graph[tgt]->pt - roads.graph[srcDesc]->pt;
+		float angle1 = atan2f(vec1.y(), vec1.x());
+		float angle2 = atan2f(vec2.y(), vec2.x());
+
+		if (Util::withinAngle(angle, angle1, angle2) || Util::diffAngle(angle, angle1) < angle_threshold || Util::diffAngle(angle, angle2) < angle_threshold) {
+			QVector2D pt;
+			float dist = GraphUtil::distance(roads, roads.graph[srcDesc]->pt, *ei, pt);
+			if (dist < min_dist) {
+				min_dist = dist;
+				nearest_desc = *ei;
+				nearestPt = pt;
+			}
+		}
+	}
+
+	if (min_dist < std::numeric_limits<float>::max()) return true;
+	else return false;
+}
+
 /**
  * Return the total lengths of the edges outing from the specified vertex.
  */

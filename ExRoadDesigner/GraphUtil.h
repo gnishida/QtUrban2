@@ -42,6 +42,7 @@ public:
 
 	// Edge related functions
 	static RoadEdgeDesc getEdge(RoadGraph& roads, int index, bool onlyValidEdge = true);
+	static bool getCloseEdge(RoadGraph& roads, RoadVertexDesc src, float distance_threshold, float angle, float angle_threshold, RoadEdgeDesc& nearest_desc, QVector2D& nearestPt, bool onlyValidEdge = true);
 	static float getTotalEdgeLength(RoadGraph& roads, RoadVertexDesc v);
 	static int getNumEdges(RoadGraph& roads, bool onlyValidEdge = true);
 	static int getNumEdges(RoadGraph& roads, RoadVertexDesc v, bool onlyValidEdge = true);

@@ -559,7 +559,7 @@ void PatchRoadGenerator::attemptExpansion2(int roadType, RoadVertexDesc srcDesc,
 	// ものすごい近くに、他の頂点がないかあれば、そことコネクトして終わり。
 	// それ以外の余計なエッジは生成しない。さもないと、ものすごい密度の濃い道路網になっちゃう。
 	RoadVertexDesc nearestDesc;
-	if (GraphUtil::getVertex(roads, srcDesc, 100.0f, direction, 1.5f, nearestDesc)) {
+	if (GraphUtil::getVertex(roads, srcDesc, 250.0f, direction, 1.5f, nearestDesc)) {
 		// もし、既にエッジがあるなら、キャンセル
 		if (GraphUtil::hasEdge(roads, srcDesc, nearestDesc)) return;
 
@@ -568,9 +568,25 @@ void PatchRoadGenerator::attemptExpansion2(int roadType, RoadVertexDesc srcDesc,
 		e->polyline.push_back(roads.graph[nearestDesc]->pt);
 
 		RoadEdgeDesc e_desc = GraphUtil::addEdge(roads, srcDesc, nearestDesc, e);
+		return;
 	} else {
-		// 道路生成用のカーネルを合成する
-		synthesizeItem(roadType, srcDesc, edges);
+		// 近くにエッジがあれば、コネクト
+		RoadEdgeDesc nearestEdgeDesc;
+		QVector2D intPoint;
+		if (GraphUtil::getCloseEdge(roads, srcDesc, 300.0f, direction, 0.3f, nearestEdgeDesc, intPoint)) {
+		//if (RoadGeneratorHelper::getCloseEdge(roads, roads.graph[srcDesc]->pt, false, roads.graph[srcDesc]->properties["group_id"].toInt(), 250.0f, srcDesc, nearestEdgeDesc, intPoint)) {
+			// 他のエッジにスナップ
+			nearestDesc = GraphUtil::splitEdge(roads, nearestEdgeDesc, intPoint);
+			roads.graph[nearestDesc]->properties["generation_type"] = "snapped";
+			roads.graph[nearestDesc]->properties["group_id"] = roads.graph[nearestEdgeDesc]->properties["group_id"];
+			roads.graph[nearestDesc]->properties["ex_id"] = roads.graph[nearestEdgeDesc]->properties["ex_id"];
+			roads.graph[nearestDesc]->properties.remove("example_desc");
+
+			return;
+		} else {
+			// 道路生成用のカーネルを合成する
+			synthesizeItem(roadType, srcDesc, edges);
+		}
 	}
 
 	float z = vboRenderManager->getTerrainHeight(roads.graph[srcDesc]->pt.x(), roads.graph[srcDesc]->pt.y(), true);
