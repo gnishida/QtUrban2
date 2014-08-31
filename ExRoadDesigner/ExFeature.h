@@ -67,7 +67,7 @@ public:
 	void saveArea(QDomDocument &doc, QDomNode &parent);
 	void saveHintLine(QDomDocument &doc, QDomNode &parent);
 
-	void savePatchImages(RoadGraph& roads, std::vector<Patch> patches);
+	void savePatchImages(int roadType, RoadGraph& roads, std::vector<Patch> patches);
 
 	void init();
 

@@ -294,7 +294,7 @@ void ExFeature::saveHintLine(QDomDocument &doc, QDomNode &parent) {
 /**
  * パッチを画像として保存する。
  */
-void ExFeature::savePatchImages(RoadGraph& roads, std::vector<Patch> patches) {
+void ExFeature::savePatchImages(int roadType, RoadGraph& roads, std::vector<Patch> patches) {
 	// 画像の大きさを決定
 	BBox bbox = GraphUtil::getAABoundingBox(roads);
 
@@ -360,7 +360,11 @@ void ExFeature::savePatchImages(RoadGraph& roads, std::vector<Patch> patches) {
 		}
 
 		char filename[255];
-		sprintf(filename, "patches/avenue_patch_%d.jpg", i);
+		if (roadType == RoadEdge::TYPE_AVENUE) {
+			sprintf(filename, "patches/avenue_patch_%d.jpg", i);
+		} else {
+			sprintf(filename, "patches/street_patch_%d.jpg", i);
+		}
 		//cv::flip(img, img, 0);
 		cv::imwrite(filename, img);
 	}
@@ -397,7 +401,11 @@ void ExFeature::savePatchImages(RoadGraph& roads, std::vector<Patch> patches) {
 			cv::putText(img, str.toUtf8().data(), cv::Point(x, y), cv::FONT_HERSHEY_SCRIPT_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
 		}
 
-		cv::imwrite("patches/patch_ids.jpg", img);
+		if (roadType == RoadEdge::TYPE_AVENUE) {
+			cv::imwrite("patches/avenue_patch_ids.jpg", img);
+		} else {
+			cv::imwrite("patches/street_patch_ids.jpg", img);
+		}
 	}
 }
 
@@ -446,14 +454,16 @@ void ExFeature::detectAvenueShapes(float houghScale, float patchDistance) {
 	avenueShapes = ShapeDetector::detect(reducedAvenues, houghScale, patchDistance);
 	avenuePatches = RoadGeneratorHelper::convertToPatch(RoadEdge::TYPE_AVENUE, reducedAvenues, avenueShapes);
 
-	savePatchImages(reducedAvenues, avenuePatches);
+	savePatchImages(RoadEdge::TYPE_AVENUE, reducedAvenues, avenuePatches);
 
 	// 以下、不要と思う。。。。
+	/*
 	for (int j = 0; j < avenueShapes.size(); ++j) {
 		for (int k = 0 ; k < avenueShapes[j].size(); ++k) {
 			reducedAvenues.graph[avenueShapes[j][k]]->properties["shape_id"] = j;
 		}
 	}
+	*/
 }
 
 void ExFeature::detectStreetShapes(float houghScale, float patchDistance) {
@@ -461,11 +471,16 @@ void ExFeature::detectStreetShapes(float houghScale, float patchDistance) {
 	streetShapesDetected = true;
 
 	streetShapes = ShapeDetector::detect(streets, houghScale, patchDistance);
+	streetPatches = RoadGeneratorHelper::convertToPatch(RoadEdge::TYPE_STREET, streets, streetShapes);
 
+	savePatchImages(RoadEdge::TYPE_STREET, streets, streetPatches);
+
+	/*
 	for (int j = 0; j < streetShapes.size(); ++j) {
 		for (int k = 0 ; k < streetShapes[j].size(); ++k) {
 			streets.graph[streetShapes[j][k]]->properties["shape_id"] = j;
 		}
 	}
+	*/
 
 }

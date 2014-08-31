@@ -57,9 +57,32 @@ std::vector<RoadEdgeDescs> ShapeDetector::detect(RoadGraph &roads, float scale, 
 		std::cout << "Close vertices detection: " << (double)(end - start) / CLOCKS_PER_SEC << " [sec]" << std::endl;
 	}
 
+	// 基本的に、全てのエッジを、いずれかのパッチに属するようにしたい。
+	// しかし、上のclose verticesの方法だと、孤立したエッジは、パッチになれない。
+	// そこで、以下で、強引にパッチにする
+	{
+		RoadEdgeIter ei, eend;
+		for (boost::tie(ei, eend) = edges(roads.graph); ei != eend; ++ei) {
+			if (!roads.graph[*ei]->valid) continue;
 
+			RoadVertexDesc src = boost::source(*ei, roads.graph);
+			RoadVertexDesc tgt = boost::target(*ei, roads.graph);
 
-	//savePatchImages(roads, shapes);
+			if (usedVertices.contains(src) || usedVertices.contains(tgt)) continue;
+
+			if (GraphUtil::getDegree(roads, src) == 1 && GraphUtil::getDegree(roads, tgt) == 1) {
+				std::vector<RoadEdgeDesc> shape;
+				shape.push_back(*ei);
+
+				// これらの頂点の属するpatchIdをセットする
+				roads.graph[src]->patchId = shapes.size();
+				roads.graph[tgt]->patchId = shapes.size();
+
+				shapes.push_back(shape);
+
+			}		
+		}
+	}
 
 	return shapes;
 }

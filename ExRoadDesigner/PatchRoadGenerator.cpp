@@ -134,34 +134,42 @@ void PatchRoadGenerator::generateRoadNetwork() {
 			patches.resize(features.size());
 			for (int i = 0; i < features.size(); ++i) {
 				shapes[i] = features[i].shapes(RoadEdge::TYPE_STREET, G::getFloat("houghScale"), G::getFloat("streetPatchDistance"));
-				patches[i] = RoadGeneratorHelper::convertToPatch(RoadEdge::TYPE_AVENUE, features[i].reducedRoads(RoadEdge::TYPE_AVENUE), shapes[i]);
+				patches[i] = RoadGeneratorHelper::convertToPatch(RoadEdge::TYPE_STREET, features[i].reducedRoads(RoadEdge::TYPE_STREET), shapes[i]);
 
+				/*
 				for (int j = 0; j < shapes[i].size(); ++j) {
 					for (int k = 0 ; k < shapes[i][j].size(); ++k) {
 						features[i].reducedRoads(RoadEdge::TYPE_STREET).graph[shapes[i][j][k]]->properties["shape_id"] = j;
 					}
 				}
+				*/
 			}
 		}
 		
 		std::cout << "Local street generation started." << std::endl;
 
-		int i;
-		for (i = 0; !seeds.empty() && i < G::getInt("numStreetIterations"); ++i) {
+		int iter;
+		for (iter = 0; !seeds.empty() && iter < G::getInt("numStreetIterations");) {
 			RoadVertexDesc desc = seeds.front();
 			seeds.pop_front();
 
 			float z = vboRenderManager->getTerrainHeight(roads.graph[desc]->pt.x(), roads.graph[desc]->pt.y(), true);
 			if (z < G::getFloat("seaLevelForStreet")) {
-				std::cout << "attemptExpansion (street): " << i << " (skipped because it is under the sea or on the mountains)" << std::endl;
+				std::cout << "attemptExpansion (street): " << iter << " (skipped because it is under the sea or on the mountains)" << std::endl;
 				continue;
 			}
 
-			std::cout << "attemptExpansion (street): " << i << " (Seed: " << desc << ")" << std::endl;
+			std::cout << "attemptExpansion (street): " << iter << " (Seed: " << desc << ")" << std::endl;
 			if (roads.graph[desc]->properties["generation_type"] == "snapped") continue;
 
 			int ex_id = roads.graph[desc]->properties["ex_id"].toInt();
 			attemptExpansion(RoadEdge::TYPE_STREET, desc, features[ex_id], patches[ex_id], seeds);
+
+			char filename[255];
+			sprintf(filename, "road_images/streets_%d.jpg", iter);
+			saveRoadImage(roads, filename);
+
+			iter++;
 		}
 		std::cout << "Local street generation completed." << std::endl;
 	}
@@ -1329,12 +1337,17 @@ void PatchRoadGenerator::saveRoadImage(RoadGraph& roads, const char* filename) {
 	for (boost::tie(ei, eend) = boost::edges(roads.graph); ei != eend; ++ei) {
 		if (!roads.graph[*ei]->valid) continue;
 
+		cv::Scalar color(128, 128, 128);
+		if (roads.graph[*ei]->type == RoadEdge::TYPE_STREET) {
+			color = cv::Scalar(192, 192, 192);
+		}
+
 		for (int pl = 0; pl < roads.graph[*ei]->polyline.size() - 1; ++pl) {
 			int x1 = roads.graph[*ei]->polyline[pl].x() - bbox.minPt.x();
 			int y1 = img.rows - (roads.graph[*ei]->polyline[pl].y() - bbox.minPt.y());
 			int x2 = roads.graph[*ei]->polyline[pl + 1].x() - bbox.minPt.x();
 			int y2 = img.rows - (roads.graph[*ei]->polyline[pl + 1].y() - bbox.minPt.y());
-			cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(128, 128, 128), 3);
+			cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), color, 3);
 		}
 	}
 
