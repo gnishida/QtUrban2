@@ -168,6 +168,35 @@ RoadVertexDesc GraphUtil::getVertex(RoadGraph& roads, const QVector2D& pt, float
 }
 
 /**
+ * 近隣頂点を探す。
+ * ただし、方向ベクトルがangle方向からしきい値を超えてる場合、その頂点はスキップする。
+ * また、距離がdistance_threshold未満であること。
+ */
+bool GraphUtil::getVertex(RoadGraph& roads, RoadVertexDesc srcDesc, float distance_threshold, float angle, float angle_threshold, RoadVertexDesc& nearest_desc, bool onlyValidVertex) {
+	float min_dist = distance_threshold * distance_threshold;
+	bool found = false;;
+
+	RoadVertexIter vi, vend;
+	for (boost::tie(vi, vend) = boost::vertices(roads.graph); vi != vend; ++vi) {
+		if (onlyValidVertex && !roads.graph[*vi]->valid) continue;
+		if (*vi == srcDesc) continue;
+
+		QVector2D vec = roads.graph[*vi]->getPt() - roads.graph[srcDesc]->pt;
+		float angle2 = atan2f(vec.y(), vec.x());
+		if (Util::diffAngle(angle, angle2) > angle_threshold) continue;
+
+		float dist = vec.lengthSquared();
+		if (dist < min_dist) {
+			nearest_desc = *vi;
+			min_dist = dist;
+			found = true;
+		}
+	}
+
+	return found;
+}
+
+/**
  * Find the closest vertex from the specified point. 
  * If the closet vertex is within the threshold, return true. Otherwise, return false.
  */
@@ -1113,6 +1142,7 @@ bool GraphUtil::isIntersect(RoadGraph &roads, const Polyline2D &polyline, QVecto
 
 /**
  * Check if the poly line intersects with the existing road segments.
+ * ただし、頂点srcDescに最も近い交点をintPointにセットして返却する。
  */
 bool GraphUtil::isIntersect(RoadGraph &roads, const Polyline2D &polyline, RoadVertexDesc srcDesc, QVector2D &intPoint) {
 	if (polyline.size() < 2) return false;
