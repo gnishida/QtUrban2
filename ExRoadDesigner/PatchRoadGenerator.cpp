@@ -61,6 +61,11 @@ void PatchRoadGenerator::generateRoadNetwork() {
 			RoadVertexDesc desc = seeds.front();
 			seeds.pop_front();
 
+			// 既に3つ以上エッジがある場合は、スキップする
+			if (GraphUtil::getDegree(roads, desc) >= 3) {
+				continue;
+			}
+
 			// エリアの外なら、スキップする
 			if (!targetArea.contains(roads.graph[desc]->pt)) {
 				printf("ERROR: this check should have been done before.\n");
@@ -134,6 +139,11 @@ void PatchRoadGenerator::generateRoadNetwork() {
 		for (iter = 0; !seeds.empty() && iter < G::getInt("numStreetIterations");) {
 			RoadVertexDesc desc = seeds.front();
 			seeds.pop_front();
+
+			// 既に3つ以上エッジがある場合は、スキップする
+			if (GraphUtil::getDegree(roads, desc) >= 3) {
+				continue;
+			}
 
 			// エリアの外なら、スキップする
 			if (!targetArea.contains(roads.graph[desc]->pt)) {
@@ -425,96 +435,6 @@ void PatchRoadGenerator::buildReplacementGraphByExample(int roadType, RoadGraph 
 	GraphUtil::clean(replacementGraph);
 }
 
-/*
-void PatchRoadGenerator::buildReplacementGraphByExample(int roadType, RoadGraph &replacementGraph, RoadVertexDesc srcDesc, RoadGraph &exRoads, RoadVertexDesc ex_srcDesc, float angle, Patch &patch, int patchId, RoadVertexDesc v_connect) {
-	replacementGraph.clear();
-
-	QMap<RoadVertexDesc, RoadVertexDesc> conv;
-	RoadVertexDesc connector_desc;
-
-	// add vertices of the patch
-	{
-		RoadVertexIter vi, vend;
-		for (boost::tie(vi, vend) = boost::vertices(patch.roads.graph); vi != vend; ++vi) {
-			if (patch.roads.graph[*vi]->onBoundary) {
-				int xxx = 0;
-			}
-
-			// Transformした後の座標を計算
-			QVector2D pt = Util::transform(patch.roads.graph[*vi]->pt, exRoads.graph[ex_srcDesc]->pt, angle, roads.graph[srcDesc]->pt);
-
-			RoadVertexPtr v = RoadVertexPtr(new RoadVertex(*patch.roads.graph[*vi]));
-			v->pt = pt;
-			v->properties["rotation_angle"] = angle;
-			v->properties["ex_id"] = roads.graph[srcDesc]->properties["ex_id"];
-			v->properties["group_id"] = roads.graph[srcDesc]->properties["group_id"];
-			if (v->patchId != patchId) {
-				int xxxx = 0;
-			}
-			v->patchId = patchId;
-
-			// 元のExampleで境界上の頂点だったかどうかは、ターゲットエリアでは関係ないので、一旦リセットする
-			v->onBoundary = false;
-
-			RoadVertexDesc v_desc = GraphUtil::addVertex(replacementGraph, v);
-			conv[*vi] = v_desc;
-
-			if (*vi == v_connect) {
-				connector_desc = v_desc;
-			}
-		}
-	}
-
-	// patchのエッジを追加
-	{
-		RoadEdgeIter ei, eend;
-		for (boost::tie(ei, eend) = boost::edges(patch.roads.graph); ei != eend; ++ei) {
-			RoadVertexDesc src = boost::source(*ei, patch.roads.graph);
-			RoadVertexDesc tgt = boost::target(*ei, patch.roads.graph);
-
-			RoadEdgePtr edge = RoadEdgePtr(new RoadEdge(*patch.roads.graph[*ei]));
-
-			// エッジを座標変換する
-			edge->polyline.translate(-exRoads.graph[ex_srcDesc]->pt);
-			edge->polyline.rotate(Util::rad2deg(-angle));
-			edge->polyline.translate(roads.graph[srcDesc]->pt);
-
-			RoadEdgeDesc e_desc = GraphUtil::addEdge(replacementGraph, conv[src], conv[tgt], edge);
-		}
-	}
-
-	// 指定されたコネクタからのエッジを削除
-	{
-		QMap<RoadVertexDesc, bool> visited;
-		std::list<RoadVertexDesc> queue;
-		queue.push_back(connector_desc);
-
-		while (!queue.empty()) {
-			RoadVertexDesc v = queue.front();
-			queue.pop_front();
-
-			RoadOutEdgeIter ei, eend;
-			for (boost::tie(ei, eend) = boost::out_edges(v, replacementGraph.graph); ei != eend; ++ei) {
-				if (!replacementGraph.graph[*ei]->valid) continue;
-
-				replacementGraph.graph[*ei]->valid = false;
-
-				RoadVertexDesc tgt = boost::target(*ei, replacementGraph.graph);
-				if (visited[tgt]) continue;
-
-				// 上で既に一本のエッジを無効にしているので、もともとdegree=2の頂点は、残り一本だけエッジが残っているはず。
-				// なので、 == 2　ではなく、 == 1　とする。
-				if (GraphUtil::getDegree(replacementGraph, tgt) == 1) {
-					queue.push_back(tgt);
-				}
-			}
-		}
-	}
-
-	GraphUtil::clean(replacementGraph);
-}
-*/
-
 /**
  * replacement graphを生成する。
  * ただし、既存グラフと接続するコネクタ部分を削除する。
@@ -678,19 +598,14 @@ void PatchRoadGenerator::rewrite(int roadType, RoadVertexDesc srcDesc, RoadGraph
  * 通常、パッチ間の接着剤として使いたいなぁ。。。
  */
 void PatchRoadGenerator::attemptExpansion2(int roadType, RoadVertexDesc srcDesc, ExFeature& f, std::list<RoadVertexDesc> &seeds) {
-	//float snapThreshold;
 	float length = 0.0f;
-	float temp = f.avgAvenueLength;
 
 	if (roadType == RoadEdge::TYPE_AVENUE) {
 		length = f.avgAvenueLength;
-		//snapThreshold = f.avgAvenueLength * 0.2f;
 	} else {
 		length = f.avgStreetLength;
-		//snapThreshold = f.avgStreetLength * 0.2f;
 	}
 
-	//float roadSnapFactor = G::getFloat("roadSnapFactor");
 	float roadAngleTolerance = G::getFloat("roadAngleTolerance");
 
 	std::vector<RoadEdgePtr> edges;
@@ -714,22 +629,26 @@ void PatchRoadGenerator::attemptExpansion2(int roadType, RoadVertexDesc srcDesc,
 
 	// ものすごい近くに、他の頂点がないかあれば、そことコネクトして終わり。
 	// それ以外の余計なエッジは生成しない。さもないと、ものすごい密度の濃い道路網になっちゃう。
-	RoadVertexDesc nearestDesc;
-	if (GraphUtil::getVertex(roads, srcDesc, length, direction, 1.5f, nearestDesc)) {
-		// もし、既にエッジがあるなら、キャンセル
-		if (GraphUtil::hasEdge(roads, srcDesc, nearestDesc)) return;
+	{
+		RoadVertexDesc nearestDesc;
+		if (GraphUtil::getVertex(roads, srcDesc, length, direction, 0.3f, nearestDesc)) {
+			// もし、既にエッジがあるなら、キャンセル
+			if (GraphUtil::hasEdge(roads, srcDesc, nearestDesc)) return;
 
-		RoadEdgePtr e = RoadEdgePtr(new RoadEdge(roadType, 1));
-		e->polyline.push_back(roads.graph[srcDesc]->pt);
-		e->polyline.push_back(roads.graph[nearestDesc]->pt);
+			RoadEdgePtr e = RoadEdgePtr(new RoadEdge(roadType, 1));
+			e->polyline.push_back(roads.graph[srcDesc]->pt);
+			e->polyline.push_back(roads.graph[nearestDesc]->pt);
 
-		RoadEdgeDesc e_desc = GraphUtil::addEdge(roads, srcDesc, nearestDesc, e);
-
-		return;
+			if (!GraphUtil::isIntersect(roads, e->polyline)) {
+				RoadEdgeDesc e_desc = GraphUtil::addEdge(roads, srcDesc, nearestDesc, e);
+				return;
+			}
+		}
 	}
 
+	// 近くにエッジがあれば、コネクト
 	{
-		// 近くにエッジがあれば、コネクト
+		RoadVertexDesc nearestDesc;
 		RoadEdgeDesc nearestEdgeDesc;
 		QVector2D intPoint;
 		if (GraphUtil::getCloseEdge(roads, srcDesc, length, direction, 0.3f, nearestEdgeDesc, intPoint)) {
@@ -740,7 +659,31 @@ void PatchRoadGenerator::attemptExpansion2(int roadType, RoadVertexDesc srcDesc,
 			roads.graph[nearestDesc]->properties["ex_id"] = roads.graph[nearestEdgeDesc]->properties["ex_id"];
 			roads.graph[nearestDesc]->properties.remove("example_desc");
 
+			RoadEdgePtr e = RoadEdgePtr(new RoadEdge(roadType, 1));
+			e->polyline.push_back(roads.graph[srcDesc]->pt);
+			e->polyline.push_back(roads.graph[nearestDesc]->pt);
+			RoadEdgeDesc e_desc = GraphUtil::addEdge(roads, srcDesc, nearestDesc, e);
+
 			return;
+		}
+	}
+
+	// ものすごい近くに、他の頂点がないかあれば、そことコネクトして終わり。
+	// それ以外の余計なエッジは生成しない。さもないと、ものすごい密度の濃い道路網になっちゃう。
+	{
+		RoadVertexDesc nearestDesc;
+		if (GraphUtil::getVertex(roads, srcDesc, length, direction, 1.5f, nearestDesc)) {
+			// もし、既にエッジがあるなら、キャンセル
+			if (GraphUtil::hasEdge(roads, srcDesc, nearestDesc)) return;
+
+			RoadEdgePtr e = RoadEdgePtr(new RoadEdge(roadType, 1));
+			e->polyline.push_back(roads.graph[srcDesc]->pt);
+			e->polyline.push_back(roads.graph[nearestDesc]->pt);
+
+			if (!GraphUtil::isIntersect(roads, e->polyline)) {
+				RoadEdgeDesc e_desc = GraphUtil::addEdge(roads, srcDesc, nearestDesc, e);
+				return;
+			}
 		}
 	}
 
@@ -808,7 +751,27 @@ bool PatchRoadGenerator::growRoadSegment2(int roadType, RoadVertexDesc srcDesc, 
 				return false;
 			}
 
-			new_edge->polyline.push_back(roads.graph[tgtDesc]->pt);
+			// もし他のエッジに交差するなら、エッジ生成をキャンセル
+			// （キャンセルせずに、交差させるべき？）
+			QVector2D intPoint;
+			if (GraphUtil::isIntersect(roads, snapped_polyline, srcDesc, intPoint)) {
+				if (Util::genRand(0, 1) < 0.5f) return false;
+
+				new_edge->polyline.push_back(intPoint);
+
+				// 直近のエッジを取得
+				RoadEdgeDesc closestEdge;
+				RoadGeneratorHelper::getCloseEdge(roads, intPoint, false, roads.graph[srcDesc]->properties["group_id"].toInt(), 1.0f, srcDesc, closestEdge, intPoint);
+
+				// 他のエッジにスナップ
+				tgtDesc = GraphUtil::splitEdge(roads, closestEdge, intPoint);
+				roads.graph[tgtDesc]->properties["generation_type"] = "snapped";
+				roads.graph[tgtDesc]->properties["group_id"] = roads.graph[closestEdge]->properties["group_id"];
+				roads.graph[tgtDesc]->properties["ex_id"] = roads.graph[closestEdge]->properties["ex_id"];
+				roads.graph[tgtDesc]->properties.remove("example_desc");
+			} else {
+				new_edge->polyline.push_back(roads.graph[tgtDesc]->pt);
+			}
 		}
 	}
 
