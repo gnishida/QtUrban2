@@ -53,16 +53,6 @@ void PatchRoadGenerator::generateRoadNetwork() {
 			for (int i = 0; i < features.size(); ++i) {
 				shapes[i] = features[i].shapes(RoadEdge::TYPE_AVENUE, G::getFloat("houghScale"), G::getFloat("avenuePatchDistance"));
 				patches[i] = RoadGeneratorHelper::convertToPatch(RoadEdge::TYPE_AVENUE, features[i].reducedRoads(RoadEdge::TYPE_AVENUE), shapes[i]);
-
-				// 各エッジに、shape_idをセットする
-				// ExFeature側で、patchIdはセット済み。なので、これは不要！
-				/*
-				for (int j = 0; j < shapes[i].size(); ++j) {
-					for (int k = 0 ; k < shapes[i][j].size(); ++k) {
-						features[i].reducedRoads(RoadEdge::TYPE_AVENUE).graph[shapes[i][j][k]]->properties["shape_id"] = j;
-					}
-				}
-				*/
 			}
 		}
 
@@ -92,7 +82,7 @@ void PatchRoadGenerator::generateRoadNetwork() {
 
 			char filename[255];
 			sprintf(filename, "road_images/avenues_%d.jpg", iter);
-			saveRoadImage(roads, filename);
+			saveRoadImage(roads, seeds, filename);
 
 			iter++;
 		}
@@ -135,14 +125,6 @@ void PatchRoadGenerator::generateRoadNetwork() {
 			for (int i = 0; i < features.size(); ++i) {
 				shapes[i] = features[i].shapes(RoadEdge::TYPE_STREET, G::getFloat("houghScale"), G::getFloat("streetPatchDistance"));
 				patches[i] = RoadGeneratorHelper::convertToPatch(RoadEdge::TYPE_STREET, features[i].reducedRoads(RoadEdge::TYPE_STREET), shapes[i]);
-
-				/*
-				for (int j = 0; j < shapes[i].size(); ++j) {
-					for (int k = 0 ; k < shapes[i][j].size(); ++k) {
-						features[i].reducedRoads(RoadEdge::TYPE_STREET).graph[shapes[i][j][k]]->properties["shape_id"] = j;
-					}
-				}
-				*/
 			}
 		}
 		
@@ -163,11 +145,13 @@ void PatchRoadGenerator::generateRoadNetwork() {
 			if (roads.graph[desc]->properties["generation_type"] == "snapped") continue;
 
 			int ex_id = roads.graph[desc]->properties["ex_id"].toInt();
-			attemptExpansion(RoadEdge::TYPE_STREET, desc, features[ex_id], patches[ex_id], seeds);
+			if (!attemptExpansion(RoadEdge::TYPE_STREET, desc, features[ex_id], patches[ex_id], seeds)) {
+				attemptExpansion2(RoadEdge::TYPE_STREET, desc, features[ex_id], seeds);
+			}
 
 			char filename[255];
 			sprintf(filename, "road_images/streets_%d.jpg", iter);
-			saveRoadImage(roads, filename);
+			saveRoadImage(roads, seeds, filename);
 
 			iter++;
 		}
@@ -357,6 +341,7 @@ void PatchRoadGenerator::buildReplacementGraphByExample(int roadType, RoadGraph 
 	replacementGraph.clear();
 
 	QMap<RoadVertexDesc, RoadVertexDesc> conv;
+	RoadVertexDesc root_desc;
 
 	// add vertices of the patch
 	{
@@ -384,6 +369,10 @@ void PatchRoadGenerator::buildReplacementGraphByExample(int roadType, RoadGraph 
 
 			RoadVertexDesc v_desc = GraphUtil::addVertex(replacementGraph, v);
 			conv[*vi] = v_desc;
+
+			if (patch.roads.graph[*vi]->properties["example_desc"].toUInt() == ex_srcDesc) {
+				root_desc = v_desc;
+			}
 		}
 	}
 
@@ -404,8 +393,33 @@ void PatchRoadGenerator::buildReplacementGraphByExample(int roadType, RoadGraph 
 			RoadEdgeDesc e_desc = GraphUtil::addEdge(replacementGraph, conv[src], conv[tgt], edge);
 		}
 	}
+
+	// コネクタの付け根の頂点から、既存グラフの頂点srcDescから出るエッジとredundantな方向に伸びるエッジも、削除する。
+	{
+		RoadOutEdgeIter ei, eend;
+		for (boost::tie(ei, eend) = boost::out_edges(srcDesc, roads.graph); ei != eend; ++ei) {
+			if (!roads.graph[*ei]->valid) continue;
+
+			Polyline2D polyline = GraphUtil::orderPolyLine(roads, *ei, srcDesc);
+
+			RoadOutEdgeIter ei2, eend2;
+			for (boost::tie(ei2, eend2) = boost::out_edges(root_desc, replacementGraph.graph); ei2 != eend2; ++ei2) {
+				if (!replacementGraph.graph[*ei2]->valid) continue;
+
+				Polyline2D polyline2 = GraphUtil::orderPolyLine(replacementGraph, *ei2, root_desc);
+
+				if (Util::diffAngle(polyline[1] - polyline[0], polyline2[1] - polyline2[0]) < 0.3f) {
+					// この方向に伸びるエッジを削除する
+					removeEdge(replacementGraph, root_desc, *ei2);
+				}
+			}
+		}
+	}
+
+	GraphUtil::clean(replacementGraph);
 }
 
+/*
 void PatchRoadGenerator::buildReplacementGraphByExample(int roadType, RoadGraph &replacementGraph, RoadVertexDesc srcDesc, RoadGraph &exRoads, RoadVertexDesc ex_srcDesc, float angle, Patch &patch, int patchId, RoadVertexDesc v_connect) {
 	replacementGraph.clear();
 
@@ -493,6 +507,7 @@ void PatchRoadGenerator::buildReplacementGraphByExample(int roadType, RoadGraph 
 
 	GraphUtil::clean(replacementGraph);
 }
+*/
 
 /**
  * replacement graphを生成する。
@@ -1329,7 +1344,7 @@ bool PatchRoadGenerator::checkCrossing(RoadGraph& replacementGraph) {
 	return false;
 }
 
-void PatchRoadGenerator::saveRoadImage(RoadGraph& roads, const char* filename) {
+void PatchRoadGenerator::saveRoadImage(RoadGraph& roads, std::list<RoadVertexDesc>& seeds, const char* filename) {
 	BBox bbox = GraphUtil::getAABoundingBox(roads);
 	cv::Mat img(bbox.dy() + 1, bbox.dx() + 1, CV_8UC3, cv::Scalar(0, 0, 0));
 
@@ -1357,6 +1372,11 @@ void PatchRoadGenerator::saveRoadImage(RoadGraph& roads, const char* filename) {
 
 		int x = roads.graph[*vi]->pt.x() - bbox.minPt.x();
 		int y = img.rows - (roads.graph[*vi]->pt.y() - bbox.minPt.y());
+
+		// seedを描画
+		if (std::find(seeds.begin(), seeds.end(), *vi) != seeds.end()) {
+			cv::circle(img, cv::Point(x, y), 6, cv::Scalar(255, 0, 0), 3);
+		}
 
 		// onBoundaryを描画
 		if (roads.graph[*vi]->onBoundary) {

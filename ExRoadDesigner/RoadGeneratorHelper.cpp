@@ -2141,7 +2141,10 @@ std::vector<Patch> RoadGeneratorHelper::convertToPatch(int roadType, RoadGraph& 
 				if (roadType == RoadEdge::TYPE_AVENUE) {
 					patch.roads.graph[v_desc]->properties["example_desc"] = src;
 				} else {
-					patch.roads.graph[v_desc]->properties["example_street_desc"] = src;
+					//patch.roads.graph[v_desc]->properties["example_street_desc"] = src;
+
+					// どうやら、local streetの場合も、example_descで良いと思う。
+					patch.roads.graph[v_desc]->properties["example_desc"] = src;
 				}
 				if (GraphUtil::getDegree(roads, src) == 1 && !roads.graph[src]->onBoundary) {
 					patch.roads.graph[v_desc]->deadend = true;
@@ -2156,7 +2159,10 @@ std::vector<Patch> RoadGeneratorHelper::convertToPatch(int roadType, RoadGraph& 
 				if (roadType == RoadEdge::TYPE_AVENUE) {
 					patch.roads.graph[v_desc]->properties["example_desc"] = tgt;
 				} else {
-					patch.roads.graph[v_desc]->properties["example_street_desc"] = tgt;
+					//patch.roads.graph[v_desc]->properties["example_street_desc"] = tgt;
+
+					// どうやら、local streetの場合も、example_descで良いと思う。
+					patch.roads.graph[v_desc]->properties["example_desc"] = tgt;
 				}
 				if (GraphUtil::getDegree(roads, tgt) == 1 && !roads.graph[tgt]->onBoundary) {
 					patch.roads.graph[v_desc]->deadend = true;
