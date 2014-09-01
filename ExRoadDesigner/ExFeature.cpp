@@ -162,9 +162,9 @@ void ExFeature::load(QString filepath, bool reduce) {
 	}
 
 	GraphUtil::copyRoads(avenues, reducedAvenues);
-	if (reduce) {
+	//if (reduce) {
 		GraphUtil::reduce(reducedAvenues);
-	}
+	//}
 	GraphUtil::clean(reducedAvenues);
 
 	init();
@@ -451,19 +451,10 @@ void ExFeature::detectAvenueShapes(float houghScale, float patchDistance) {
 	if (avenueShapesDetected) return;
 	avenueShapesDetected = true;
 
-	avenueShapes = ShapeDetector::detect(reducedAvenues, houghScale, patchDistance);
-	avenuePatches = RoadGeneratorHelper::convertToPatch(RoadEdge::TYPE_AVENUE, reducedAvenues, avenueShapes);
+	avenueShapes = ShapeDetector::detect(avenues, houghScale, patchDistance);
+	avenuePatches = RoadGeneratorHelper::convertToPatch(RoadEdge::TYPE_AVENUE, avenues, avenueShapes);
 
-	savePatchImages(RoadEdge::TYPE_AVENUE, reducedAvenues, avenuePatches);
-
-	// 以下、不要と思う。。。。
-	/*
-	for (int j = 0; j < avenueShapes.size(); ++j) {
-		for (int k = 0 ; k < avenueShapes[j].size(); ++k) {
-			reducedAvenues.graph[avenueShapes[j][k]]->properties["shape_id"] = j;
-		}
-	}
-	*/
+	savePatchImages(RoadEdge::TYPE_AVENUE, avenues, avenuePatches);
 }
 
 void ExFeature::detectStreetShapes(float houghScale, float patchDistance) {
@@ -474,13 +465,4 @@ void ExFeature::detectStreetShapes(float houghScale, float patchDistance) {
 	streetPatches = RoadGeneratorHelper::convertToPatch(RoadEdge::TYPE_STREET, streets, streetShapes);
 
 	savePatchImages(RoadEdge::TYPE_STREET, streets, streetPatches);
-
-	/*
-	for (int j = 0; j < streetShapes.size(); ++j) {
-		for (int k = 0 ; k < streetShapes[j].size(); ++k) {
-			streets.graph[streetShapes[j][k]]->properties["shape_id"] = j;
-		}
-	}
-	*/
-
 }
