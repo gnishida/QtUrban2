@@ -2125,7 +2125,7 @@ bool RoadGeneratorHelper::isShape(RoadGraph &roads, RoadVertexDesc desc, std::ve
 }
 
 // パッチオブジェクトに変換する
-std::vector<Patch> RoadGeneratorHelper::convertToPatch(int roadType, RoadGraph& roads, std::vector<RoadEdgeDescs> &shapes) {
+std::vector<Patch> RoadGeneratorHelper::convertToPatch(int roadType, RoadGraph& roads, RoadGraph& avenues, std::vector<RoadEdgeDescs> &shapes) {
 	std::vector<Patch> patches;
 	for (int i = 0; i < shapes.size(); ++i) {
 		Patch patch;
@@ -2147,7 +2147,15 @@ std::vector<Patch> RoadGeneratorHelper::convertToPatch(int roadType, RoadGraph& 
 					patch.roads.graph[v_desc]->properties["example_desc"] = src;
 				}
 				if (GraphUtil::getDegree(roads, src) == 1 && !roads.graph[src]->onBoundary) {
-					patch.roads.graph[v_desc]->deadend = true;
+					if (roadType == RoadEdge::TYPE_AVENUE) {
+						patch.roads.graph[v_desc]->deadend = true;
+					} else {
+						// local streetの場合、avenueとの交点はdeadendと見なさない
+						RoadVertexDesc nearest_desc;
+						if (!GraphUtil::getVertex(avenues, roads.graph[src]->pt, 0.1f, nearest_desc)) {
+							patch.roads.graph[v_desc]->deadend = true;
+						}
+					}
 				}
 				patch.roads.graph[v_desc]->patchId = i;
 				patch.roads.graph[v_desc]->type = roadType;
@@ -2165,7 +2173,15 @@ std::vector<Patch> RoadGeneratorHelper::convertToPatch(int roadType, RoadGraph& 
 					patch.roads.graph[v_desc]->properties["example_desc"] = tgt;
 				}
 				if (GraphUtil::getDegree(roads, tgt) == 1 && !roads.graph[tgt]->onBoundary) {
-					patch.roads.graph[v_desc]->deadend = true;
+					if (roadType == RoadEdge::TYPE_AVENUE) {
+						patch.roads.graph[v_desc]->deadend = true;
+					} else {
+						// local streetの場合、avenueとの交点はdeadendと見なさない
+						RoadVertexDesc nearest_desc;
+						if (!GraphUtil::getVertex(avenues, roads.graph[tgt]->pt, 0.1f, nearest_desc)) {
+							patch.roads.graph[v_desc]->deadend = true;
+						}
+					}
 				}
 				patch.roads.graph[v_desc]->patchId = i;
 				patch.roads.graph[v_desc]->type = roadType;

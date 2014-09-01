@@ -452,7 +452,7 @@ void ExFeature::detectAvenueShapes(float houghScale, float patchDistance) {
 	avenueShapesDetected = true;
 
 	avenueShapes = ShapeDetector::detect(avenues, houghScale, patchDistance);
-	avenuePatches = RoadGeneratorHelper::convertToPatch(RoadEdge::TYPE_AVENUE, avenues, avenueShapes);
+	avenuePatches = RoadGeneratorHelper::convertToPatch(RoadEdge::TYPE_AVENUE, avenues, avenues, avenueShapes);
 
 	savePatchImages(RoadEdge::TYPE_AVENUE, avenues, avenuePatches);
 }
@@ -462,7 +462,7 @@ void ExFeature::detectStreetShapes(float houghScale, float patchDistance) {
 	streetShapesDetected = true;
 
 	streetShapes = ShapeDetector::detect(streets, houghScale, patchDistance);
-	streetPatches = RoadGeneratorHelper::convertToPatch(RoadEdge::TYPE_STREET, streets, streetShapes);
+	streetPatches = RoadGeneratorHelper::convertToPatch(RoadEdge::TYPE_STREET, streets, avenues, streetShapes);
 
 	savePatchImages(RoadEdge::TYPE_STREET, streets, streetPatches);
 }
