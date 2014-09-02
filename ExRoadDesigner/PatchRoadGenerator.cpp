@@ -162,12 +162,8 @@ void PatchRoadGenerator::generateRoadNetwork() {
 			}
 
 			std::cout << "attemptExpansion (street): " << iter << " (Seed: " << desc << ")" << std::endl;
-			if (iter == 296) {
-				int xxx = 0;
-				int xxx2 = 0;
-				int xxx3 = 0;
-			}
-			if (roads.graph[desc]->properties["generation_type"] == "snapped") continue;
+
+			//if (roads.graph[desc]->properties["generation_type"] == "snapped") continue;
 
 			int ex_id = roads.graph[desc]->properties["ex_id"].toInt();
 			//if (!attemptConnect(RoadEdge::TYPE_STREET, desc, features[ex_id], seeds)) {
@@ -257,8 +253,10 @@ void PatchRoadGenerator::generateStreetSeeds(std::list<RoadVertexDesc> &seeds) {
 			// The surrounding roads shoule not be used for the local street genration any more.
 			if (roads.graph[*vi]->fixed) continue;
 
+			// エリア外なら、スキップ
+			if (!targetArea.contains(roads.graph[*vi]->pt)) continue;
+
 			if (roads.graph[*vi]->properties.contains("example_desc")) {
-				if (!targetArea.contains(roads.graph[*vi]->pt)) continue;
 				float z = vboRenderManager->getTerrainHeight(roads.graph[*vi]->pt.x(), roads.graph[*vi]->pt.y(), true);
 				if (z < G::getFloat("seaLevelForStreet")) continue;
 
