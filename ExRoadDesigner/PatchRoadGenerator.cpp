@@ -81,8 +81,10 @@ void PatchRoadGenerator::generateRoadNetwork() {
 
 			std::cout << "attemptExpansion (avenue): " << iter << " (Seed: " << desc << ")" << std::endl;
 			int ex_id = roads.graph[desc]->properties["ex_id"].toInt();
-			if (!attemptExpansion(RoadEdge::TYPE_AVENUE, desc, features[ex_id], patches[ex_id], seeds)) {
-				attemptExpansion2(RoadEdge::TYPE_AVENUE, desc, features[ex_id], seeds);
+			if (!attemptConnect(RoadEdge::TYPE_AVENUE, desc, features[ex_id], seeds)) {
+				if (!attemptExpansion(RoadEdge::TYPE_AVENUE, desc, features[ex_id], patches[ex_id], seeds)) {
+					attemptExpansion2(RoadEdge::TYPE_AVENUE, desc, features[ex_id], seeds);
+				}
 			}
 
 			char filename[255];
@@ -161,8 +163,10 @@ void PatchRoadGenerator::generateRoadNetwork() {
 			if (roads.graph[desc]->properties["generation_type"] == "snapped") continue;
 
 			int ex_id = roads.graph[desc]->properties["ex_id"].toInt();
-			if (!attemptExpansion(RoadEdge::TYPE_STREET, desc, features[ex_id], patches[ex_id], seeds)) {
-				attemptExpansion2(RoadEdge::TYPE_STREET, desc, features[ex_id], seeds);
+			if (!attemptConnect(RoadEdge::TYPE_STREET, desc, features[ex_id], seeds)) {
+				if (!attemptExpansion(RoadEdge::TYPE_STREET, desc, features[ex_id], patches[ex_id], seeds)) {
+					attemptExpansion2(RoadEdge::TYPE_STREET, desc, features[ex_id], seeds);
+				}
 			}
 
 			char filename[255];
@@ -264,6 +268,174 @@ void PatchRoadGenerator::generateStreetSeeds(std::list<RoadVertexDesc> &seeds) {
 
 		}
 	}
+}
+
+/**
+ * 近くに頂点またはエッジがあるなら、コネクトしちゃう。
+ * コネクトできた場合は、trueを返却する。
+ * コネクトできなかった場合は、falseを返却する。
+ */
+bool PatchRoadGenerator::attemptConnect(int roadType, RoadVertexDesc srcDesc, ExFeature& f, std::list<RoadVertexDesc> &seeds) {
+	float length = 0.0f;
+
+	if (roadType == RoadEdge::TYPE_AVENUE) {
+		length = f.avgAvenueLength;
+	} else {
+		length = f.avgStreetLength;
+	}
+
+	float roadAngleTolerance = G::getFloat("roadAngleTolerance");
+
+	std::vector<RoadEdgePtr> edges;
+
+	// 当該頂点から出るエッジをリストアップし、基底の方向を決定する
+	float direction = 0.0f;
+	{
+		RoadOutEdgeIter ei, eend;
+		for (boost::tie(ei, eend) = boost::out_edges(srcDesc, roads.graph); ei != eend; ++ei) {
+			if (!roads.graph[*ei]->valid) continue;
+
+			Polyline2D polyline  = GraphUtil::orderPolyLine(roads, *ei, srcDesc);
+			QVector2D vec = polyline[1] - polyline[0];
+			direction = atan2f(vec.y(), vec.x());
+			break;
+		}
+	}
+
+	// 既にあるエッジと正反対の方向を計算
+	direction += 3.141592653;
+
+	// ものすごい近くに、他の頂点がないかあれば、そことコネクトして終わり。
+	// それ以外の余計なエッジは生成しない。さもないと、ものすごい密度の濃い道路網になっちゃう。
+	{
+		RoadVertexDesc nearestDesc;
+		if (GraphUtil::getVertex(roads, srcDesc, length, direction, 0.3f, nearestDesc)) {
+			// もし、既にエッジがあるなら、キャンセル
+			// なお、ここではtrueを返却して、これ以上のエッジ生成をさせない。
+			if (GraphUtil::hasEdge(roads, srcDesc, nearestDesc)) return true;
+
+			// その頂点のexample_descと、この頂点のexample_descの位置関係と、実際の位置関係が同じ場合、
+			// patch適用でピッタリはまるはずなので、connectしない。
+			{
+				RoadVertexDesc ex_v1_desc;
+				RoadVertexDesc ex_v2_desc;
+				bool has_ex_v1 = false;
+				bool has_ex_v2 = false;
+				if (roadType == RoadEdge::TYPE_AVENUE) {
+					if (roads.graph[srcDesc]->properties.contains("example_desc")) {
+						has_ex_v1 = true;
+						ex_v1_desc = roads.graph[srcDesc]->properties["example_desc"].toUInt();
+					}
+					if (roads.graph[nearestDesc]->properties.contains("example_desc")) {
+						has_ex_v2 = true;
+						ex_v2_desc = roads.graph[nearestDesc]->properties["example_desc"].toUInt();
+					}
+				} else {
+					if (roads.graph[srcDesc]->properties.contains("example_street_desc")) {
+						has_ex_v1 = true;
+						ex_v1_desc = roads.graph[srcDesc]->properties["example_street_desc"].toUInt();
+					}
+					if (roads.graph[nearestDesc]->properties.contains("example_street_desc")) {
+						has_ex_v2 = true;
+						ex_v2_desc = roads.graph[nearestDesc]->properties["example_street_desc"].toUInt();
+					}
+				}
+
+				if (has_ex_v1 && has_ex_v2) {
+					QVector2D ex_vec = f.roads(roadType).graph[ex_v2_desc]->pt - f.roads(roadType).graph[ex_v1_desc]->pt;
+					QVector2D vec = roads.graph[nearestDesc]->pt - roads.graph[srcDesc]->pt;
+					if ((vec - ex_vec).lengthSquared() <= 0.1f) return false;
+				}
+			}
+
+			RoadEdgePtr e = RoadEdgePtr(new RoadEdge(roadType, 1));
+			e->polyline.push_back(roads.graph[srcDesc]->pt);
+			e->polyline.push_back(roads.graph[nearestDesc]->pt);
+
+			if (!GraphUtil::isIntersect(roads, e->polyline)) {
+				RoadEdgeDesc e_desc = GraphUtil::addEdge(roads, srcDesc, nearestDesc, e);
+				return true;
+			}
+		}
+	}
+
+	// 近くにエッジがあれば、コネクト
+	{
+		RoadVertexDesc nearestDesc;
+		RoadEdgeDesc nearestEdgeDesc;
+		QVector2D intPoint;
+		if (GraphUtil::getCloseEdge(roads, srcDesc, length, direction, 0.3f, nearestEdgeDesc, intPoint)) {
+			// エッジにスナップ
+			nearestDesc = GraphUtil::splitEdge(roads, nearestEdgeDesc, intPoint);
+			roads.graph[nearestDesc]->properties["generation_type"] = "snapped";
+			roads.graph[nearestDesc]->properties["group_id"] = roads.graph[nearestEdgeDesc]->properties["group_id"];
+			roads.graph[nearestDesc]->properties["ex_id"] = roads.graph[nearestEdgeDesc]->properties["ex_id"];
+			roads.graph[nearestDesc]->properties.remove("example_desc");
+
+			RoadEdgePtr e = RoadEdgePtr(new RoadEdge(roadType, 1));
+			e->polyline.push_back(roads.graph[srcDesc]->pt);
+			e->polyline.push_back(roads.graph[nearestDesc]->pt);
+			RoadEdgeDesc e_desc = GraphUtil::addEdge(roads, srcDesc, nearestDesc, e);
+
+			return true;
+		}
+	}
+
+	// ものすごい近くに、他の頂点がないかあれば、そことコネクトして終わり。
+	// それ以外の余計なエッジは生成しない。さもないと、ものすごい密度の濃い道路網になっちゃう。
+	{
+		RoadVertexDesc nearestDesc;
+		if (GraphUtil::getVertex(roads, srcDesc, length, direction, 1.5f, nearestDesc)) {
+			// もし、既にエッジがあるなら、キャンセル
+			// なお、ここではtrueを返却して、これ以上のエッジ生成をさせない。
+			if (GraphUtil::hasEdge(roads, srcDesc, nearestDesc)) return true;
+
+			// その頂点のexample_descと、この頂点のexample_descの位置関係と、実際の位置関係が同じ場合、
+			// patch適用でピッタリはまるはずなので、connectしない。
+			{
+				RoadVertexDesc ex_v1_desc;
+				RoadVertexDesc ex_v2_desc;
+				bool has_ex_v1 = false;
+				bool has_ex_v2 = false;
+				if (roadType == RoadEdge::TYPE_AVENUE) {
+					if (roads.graph[srcDesc]->properties.contains("example_desc")) {
+						has_ex_v1 = true;
+						ex_v1_desc = roads.graph[srcDesc]->properties["example_desc"].toUInt();
+					}
+					if (roads.graph[nearestDesc]->properties.contains("example_desc")) {
+						has_ex_v2 = true;
+						ex_v2_desc = roads.graph[nearestDesc]->properties["example_desc"].toUInt();
+					}
+				} else {
+					if (roads.graph[srcDesc]->properties.contains("example_street_desc")) {
+						has_ex_v1 = true;
+						ex_v1_desc = roads.graph[srcDesc]->properties["example_street_desc"].toUInt();
+					}
+					if (roads.graph[nearestDesc]->properties.contains("example_street_desc")) {
+						has_ex_v2 = true;
+						ex_v2_desc = roads.graph[nearestDesc]->properties["example_street_desc"].toUInt();
+					}
+				}
+
+				if (has_ex_v1 && has_ex_v2) {
+					QVector2D ex_vec = f.roads(roadType).graph[ex_v2_desc]->pt - f.roads(roadType).graph[ex_v1_desc]->pt;
+					QVector2D vec = roads.graph[nearestDesc]->pt - roads.graph[srcDesc]->pt;
+					if ((vec - ex_vec).lengthSquared() <= 0.1f) return false;
+				}
+			}
+
+			RoadEdgePtr e = RoadEdgePtr(new RoadEdge(roadType, 1));
+			e->polyline.push_back(roads.graph[srcDesc]->pt);
+			e->polyline.push_back(roads.graph[nearestDesc]->pt);
+
+			if (!GraphUtil::isIntersect(roads, e->polyline)) {
+				RoadEdgeDesc e_desc = GraphUtil::addEdge(roads, srcDesc, nearestDesc, e);
+				return true;
+			}
+		}
+	}
+
+	return false;
 }
 
 /**
