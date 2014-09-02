@@ -163,11 +163,11 @@ void PatchRoadGenerator::generateRoadNetwork() {
 			if (roads.graph[desc]->properties["generation_type"] == "snapped") continue;
 
 			int ex_id = roads.graph[desc]->properties["ex_id"].toInt();
-			if (!attemptConnect(RoadEdge::TYPE_STREET, desc, features[ex_id], seeds)) {
+			//if (!attemptConnect(RoadEdge::TYPE_STREET, desc, features[ex_id], seeds)) {
 				if (!attemptExpansion(RoadEdge::TYPE_STREET, desc, features[ex_id], patches[ex_id], seeds)) {
 					attemptExpansion2(RoadEdge::TYPE_STREET, desc, features[ex_id], seeds);
 				}
-			}
+			//}
 
 			char filename[255];
 			sprintf(filename, "road_images/streets_%d.jpg", iter);
@@ -326,18 +326,22 @@ bool PatchRoadGenerator::attemptConnect(int roadType, RoadVertexDesc srcDesc, Ex
 						has_ex_v1 = true;
 						ex_v1_desc = roads.graph[srcDesc]->properties["example_desc"].toUInt();
 					}
-					if (roads.graph[nearestDesc]->properties.contains("example_desc")) {
-						has_ex_v2 = true;
-						ex_v2_desc = roads.graph[nearestDesc]->properties["example_desc"].toUInt();
+					if (roads.graph[srcDesc]->properties["ex_id"].toInt() == roads.graph[nearestDesc]->properties["ex_id"].toInt()) {
+						if (roads.graph[nearestDesc]->properties.contains("example_desc")) {
+							has_ex_v2 = true;
+							ex_v2_desc = roads.graph[nearestDesc]->properties["example_desc"].toUInt();
+						}
 					}
 				} else {
 					if (roads.graph[srcDesc]->properties.contains("example_street_desc")) {
 						has_ex_v1 = true;
 						ex_v1_desc = roads.graph[srcDesc]->properties["example_street_desc"].toUInt();
 					}
-					if (roads.graph[nearestDesc]->properties.contains("example_street_desc")) {
-						has_ex_v2 = true;
-						ex_v2_desc = roads.graph[nearestDesc]->properties["example_street_desc"].toUInt();
+					if (roads.graph[srcDesc]->properties["ex_id"].toInt() == roads.graph[nearestDesc]->properties["ex_id"].toInt()) {
+						if (roads.graph[nearestDesc]->properties.contains("example_street_desc")) {
+							has_ex_v2 = true;
+							ex_v2_desc = roads.graph[nearestDesc]->properties["example_street_desc"].toUInt();
+						}
 					}
 				}
 
@@ -402,18 +406,22 @@ bool PatchRoadGenerator::attemptConnect(int roadType, RoadVertexDesc srcDesc, Ex
 						has_ex_v1 = true;
 						ex_v1_desc = roads.graph[srcDesc]->properties["example_desc"].toUInt();
 					}
-					if (roads.graph[nearestDesc]->properties.contains("example_desc")) {
-						has_ex_v2 = true;
-						ex_v2_desc = roads.graph[nearestDesc]->properties["example_desc"].toUInt();
+					if (roads.graph[srcDesc]->properties["ex_id"].toInt() == roads.graph[nearestDesc]->properties["ex_id"].toInt()) {
+						if (roads.graph[nearestDesc]->properties.contains("example_desc")) {
+							has_ex_v2 = true;
+							ex_v2_desc = roads.graph[nearestDesc]->properties["example_desc"].toUInt();
+						}
 					}
 				} else {
 					if (roads.graph[srcDesc]->properties.contains("example_street_desc")) {
 						has_ex_v1 = true;
 						ex_v1_desc = roads.graph[srcDesc]->properties["example_street_desc"].toUInt();
 					}
-					if (roads.graph[nearestDesc]->properties.contains("example_street_desc")) {
-						has_ex_v2 = true;
-						ex_v2_desc = roads.graph[nearestDesc]->properties["example_street_desc"].toUInt();
+					if (roads.graph[srcDesc]->properties["ex_id"].toInt() == roads.graph[nearestDesc]->properties["ex_id"].toInt()) {
+						if (roads.graph[nearestDesc]->properties.contains("example_street_desc")) {
+							has_ex_v2 = true;
+							ex_v2_desc = roads.graph[nearestDesc]->properties["example_street_desc"].toUInt();
+						}
 					}
 				}
 
@@ -867,7 +875,7 @@ void PatchRoadGenerator::attemptExpansion2(int roadType, RoadVertexDesc srcDesc,
 	int cnt = 0;
 	for (int i = 0; i < edges.size(); ++i) {
 		if (RoadGeneratorHelper::isRedundantEdge(roads, srcDesc, edges[i]->polyline, roadAngleTolerance)) continue;
-		if (growRoadSegment2(roadType, srcDesc, f, edges[i]->polyline, edges[i]->lanes, roadAngleTolerance, seeds)) {
+		if (growRoadSegment(roadType, srcDesc, f, edges[i]->polyline, edges[i]->lanes, roadAngleTolerance, seeds)) {
 			cnt++;
 		}
 
@@ -883,7 +891,7 @@ void PatchRoadGenerator::attemptExpansion2(int roadType, RoadVertexDesc srcDesc,
  * 指定されたpolylineに従って、srcDesc頂点からエッジを伸ばす。
  * エッジの端点が、srcDescとは違うセルに入る場合は、falseを返却する。
  */
-bool PatchRoadGenerator::growRoadSegment2(int roadType, RoadVertexDesc srcDesc, ExFeature& f, const Polyline2D &polyline, int lanes, float angleTolerance, std::list<RoadVertexDesc> &seeds) {
+bool PatchRoadGenerator::growRoadSegment(int roadType, RoadVertexDesc srcDesc, ExFeature& f, const Polyline2D &polyline, int lanes, float angleTolerance, std::list<RoadVertexDesc> &seeds) {
 	float angle = atan2f(polyline[1].y() - polyline[0].y(), polyline[1].x() - polyline[0].x());
 
 	RoadEdgePtr new_edge = RoadEdgePtr(new RoadEdge(roadType, lanes));
@@ -926,10 +934,11 @@ bool PatchRoadGenerator::growRoadSegment2(int roadType, RoadVertexDesc srcDesc, 
 			// もし他のエッジに交差するなら、エッジ生成をキャンセル
 			// （キャンセルせずに、交差させるべき？）
 			QVector2D intPoint;
-			if (GraphUtil::isIntersect(roads, snapped_polyline, srcDesc, intPoint)) {
+			new_edge->polyline.push_back(roads.graph[tgtDesc]->pt);
+			if (GraphUtil::isIntersect(roads, new_edge->polyline, srcDesc, intPoint)) {
 				if (Util::genRand(0, 1) < 0.5f) return false;
 
-				new_edge->polyline.push_back(intPoint);
+				new_edge->polyline[1] = intPoint;
 
 				// 直近のエッジを取得
 				RoadEdgeDesc closestEdge;
