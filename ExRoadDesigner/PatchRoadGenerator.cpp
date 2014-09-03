@@ -952,15 +952,12 @@ bool PatchRoadGenerator::growRoadSegment(int roadType, RoadVertexDesc srcDesc, E
 			// もし他のエッジに交差するなら、エッジ生成をキャンセル
 			// （キャンセルせずに、交差させるべき？）
 			QVector2D intPoint;
+			RoadEdgeDesc closestEdge;
 			new_edge->polyline.push_back(roads.graph[tgtDesc]->pt);
-			if (GraphUtil::isIntersect(roads, new_edge->polyline, srcDesc, intPoint)) {
+			if (GraphUtil::isIntersect(roads, new_edge->polyline, srcDesc, closestEdge, intPoint)) {
 				if (Util::genRand(0, 1) < 0.5f) return false;
 
 				new_edge->polyline[1] = intPoint;
-
-				// 直近のエッジを取得
-				RoadEdgeDesc closestEdge;
-				RoadGeneratorHelper::getCloseEdge(roads, intPoint, false, roads.graph[srcDesc]->properties["group_id"].toInt(), 1.0f, srcDesc, closestEdge, intPoint);
 
 				// 他のエッジにスナップ
 				tgtDesc = GraphUtil::splitEdge(roads, closestEdge, intPoint);
@@ -980,16 +977,13 @@ bool PatchRoadGenerator::growRoadSegment(int roadType, RoadVertexDesc srcDesc, E
 
 		// もし、新規エッジが、既存グラフと交差するなら、エッジ生成をキャンセル
 		QVector2D intPoint;
-		if (GraphUtil::isIntersect(roads, new_edge->polyline, srcDesc, intPoint)) {
+		RoadEdgeDesc closestEdge;
+		if (GraphUtil::isIntersect(roads, new_edge->polyline, srcDesc, closestEdge, intPoint)) {
 			// 60%の確率でキャンセル？
 			if (Util::genRand(0, 1) < 0.6f) return false;
 
 			// 交差する箇所で中断させる
 			new_edge->polyline[1] = intPoint;
-
-			// 直近のエッジを取得
-			RoadEdgeDesc closestEdge;
-			RoadGeneratorHelper::getCloseEdge(roads, intPoint, false, roads.graph[srcDesc]->properties["group_id"].toInt(), 1.0f, srcDesc, closestEdge, intPoint);
 
 			// 他のエッジにスナップ
 			tgtDesc = GraphUtil::splitEdge(roads, closestEdge, intPoint);
