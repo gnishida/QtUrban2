@@ -132,7 +132,7 @@ void PatchRoadGenerator::generateRoadNetwork() {
 			shapes.resize(features.size());
 			patches.resize(features.size());
 			for (int i = 0; i < features.size(); ++i) {
-				shapes[i] = features[i].shapes(RoadEdge::TYPE_STREET, G::getFloat("houghScale"), G::getFloat("streetPatchDistance"));
+				shapes[i] = features[i].shapes(RoadEdge::TYPE_STREET, G::getFloat("houghScale") * 0.2f, G::getFloat("streetPatchDistance"));
 				patches[i] = RoadGeneratorHelper::convertToPatch(RoadEdge::TYPE_STREET, features[i].roads(RoadEdge::TYPE_STREET), features[i].roads(RoadEdge::TYPE_AVENUE), shapes[i]);
 			}
 		}
@@ -321,7 +321,7 @@ bool PatchRoadGenerator::attemptConnect(int roadType, RoadVertexDesc srcDesc, in
 	// それ以外の余計なエッジは生成しない。さもないと、ものすごい密度の濃い道路網になっちゃう。
 	{
 		RoadVertexDesc nearestDesc;
-		if (GraphUtil::getVertex(roads, srcDesc, length, direction, 0.3f, nearestDesc)) {
+		if (GraphUtil::getVertexExceptDeadend(roads, srcDesc, length, direction, 0.3f, nearestDesc)) {
 			// もし、既にエッジがあるなら、キャンセル
 			// なお、ここではtrueを返却して、これ以上のエッジ生成をさせない。
 			if (GraphUtil::hasEdge(roads, srcDesc, nearestDesc)) return true;
@@ -402,7 +402,7 @@ bool PatchRoadGenerator::attemptConnect(int roadType, RoadVertexDesc srcDesc, in
 	// それ以外の余計なエッジは生成しない。さもないと、ものすごい密度の濃い道路網になっちゃう。
 	{
 		RoadVertexDesc nearestDesc;
-		if (GraphUtil::getVertex(roads, srcDesc, length, direction, 1.5f, nearestDesc)) {
+		if (GraphUtil::getVertexExceptDeadend(roads, srcDesc, length, direction, 1.5f, nearestDesc)) {
 			// もし、既にエッジがあるなら、キャンセル
 			// なお、ここではtrueを返却して、これ以上のエッジ生成をさせない。
 			if (GraphUtil::hasEdge(roads, srcDesc, nearestDesc)) return true;
@@ -829,7 +829,7 @@ void PatchRoadGenerator::attemptExpansion2(int roadType, RoadVertexDesc srcDesc,
 	// それ以外の余計なエッジは生成しない。さもないと、ものすごい密度の濃い道路網になっちゃう。
 	{
 		RoadVertexDesc nearestDesc;
-		if (GraphUtil::getVertex(roads, srcDesc, length, direction, 0.3f, nearestDesc)) {
+		if (GraphUtil::getVertexExceptDeadend(roads, srcDesc, length, direction, 0.3f, nearestDesc)) {
 			// もし、既にエッジがあるなら、キャンセル
 			if (GraphUtil::hasEdge(roads, srcDesc, nearestDesc)) return;
 
@@ -870,7 +870,7 @@ void PatchRoadGenerator::attemptExpansion2(int roadType, RoadVertexDesc srcDesc,
 	// それ以外の余計なエッジは生成しない。さもないと、ものすごい密度の濃い道路網になっちゃう。
 	{
 		RoadVertexDesc nearestDesc;
-		if (GraphUtil::getVertex(roads, srcDesc, length, direction, 1.5f, nearestDesc)) {
+		if (GraphUtil::getVertexExceptDeadend(roads, srcDesc, length, direction, 1.5f, nearestDesc)) {
 			// もし、既にエッジがあるなら、キャンセル
 			if (GraphUtil::hasEdge(roads, srcDesc, nearestDesc)) return;
 
@@ -929,7 +929,7 @@ bool PatchRoadGenerator::growRoadSegment(int roadType, RoadVertexDesc srcDesc, E
 			found = true;
 		}
 		*/
-		if (GraphUtil::getVertex(roads, srcDesc, polyline.length() * 2.0f, angle, 0.3f, tgtDesc)) {
+		if (GraphUtil::getVertexExceptDeadend(roads, srcDesc, polyline.length() * 2.0f, angle, 0.3f, tgtDesc)) {
 			found = true;
 		}
 
@@ -1181,10 +1181,10 @@ void PatchRoadGenerator::removeEdge(RoadGraph& roads, RoadVertexDesc srcDesc, Ro
 
 int PatchRoadGenerator::defineExId(const QVector2D& pt) {
 	std::vector<float> sigma;
-	sigma.push_back(SQR(G::getDouble("interpolationSigma1")));
-	sigma.push_back(SQR(G::getDouble("interpolationSigma2")));
+	sigma.push_back(G::getDouble("interpolationSigma1"));
+	sigma.push_back(G::getDouble("interpolationSigma2"));
 	for (int i = 2; i < features.size(); ++i) {
-		sigma.push_back(SQR(G::getDouble("interpolationSigma2")));
+		sigma.push_back(G::getDouble("interpolationSigma2"));
 	}
 
 	int numSeedsPerEx = hintLine.size() / features.size();

@@ -1,7 +1,7 @@
 ﻿#include "CircleHoughTransform.h"
 #include "GraphUtil.h"
 
-std::vector<RoadEdgeDescs> CircleHoughTransform::detect(RoadGraph &roads, float scale) {
+std::vector<RoadEdgeDescs> CircleHoughTransform::detect(RoadGraph &roads, float maxRadius) {
 	BBox bbox = GraphUtil::bbox(roads);
 
 	cv::Mat img(bbox.dy(), bbox.dx(), CV_8U, cv::Scalar(0));
@@ -34,6 +34,9 @@ std::vector<RoadEdgeDescs> CircleHoughTransform::detect(RoadGraph &roads, float 
 		float cy = circles[i][1] + bbox.minPt.y();
 		float cr = circles[i][2];
 
+		// 半径が、指定された最大値より大きい場合、この円を除外する。
+		if (cr > maxRadius) continue;
+
 		RoadEdgeDescs circle_edges;
 
 		// add the corresponding edges to this circle
@@ -43,7 +46,8 @@ std::vector<RoadEdgeDescs> CircleHoughTransform::detect(RoadGraph &roads, float 
 				if (!roads.graph[*ei]->valid) continue;
 				if (usedEdges.contains(*ei)) continue;
 
-				Polyline2D polyline = GraphUtil::finerEdge(roads.graph[*ei]->polyline, 1.0f / scale);
+				//Polyline2D polyline = GraphUtil::finerEdge(roads.graph[*ei]->polyline, 1.0f / scale);
+				Polyline2D polyline = GraphUtil::finerEdge(roads.graph[*ei]->polyline, 10.0f);
 
 				int count = 0;
 

@@ -4,7 +4,7 @@
 #include "CircleHoughTransform.h"
 #include "RoadGeneratorHelper.h"
 
-std::vector<RoadEdgeDescs> ShapeDetector::detect(RoadGraph &roads, float scale, float threshold) {
+std::vector<RoadEdgeDescs> ShapeDetector::detect(RoadGraph &roads, float maxRadius, float threshold) {
 	float threshold2 = SQR(threshold);
 
 	RoadVertexDesc center;
@@ -14,7 +14,7 @@ std::vector<RoadEdgeDescs> ShapeDetector::detect(RoadGraph &roads, float scale, 
 
 	std::vector<RoadEdgeDescs> shapes;
 	// detect circles
-	shapes = CircleHoughTransform::detect(roads, scale);
+	shapes = CircleHoughTransform::detect(roads, maxRadius);
 	time_t start = clock();
 	for (int i = 0; i < shapes.size(); ++i) {
 		for (int j = 0; j < shapes[i].size(); ++j) {

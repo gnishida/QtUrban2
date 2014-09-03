@@ -197,6 +197,44 @@ bool GraphUtil::getVertex(RoadGraph& roads, RoadVertexDesc srcDesc, float distan
 }
 
 /**
+ * 近隣頂点を探す。ただし、deadendの頂点は対象外。
+ * また、方向ベクトルがangle方向からしきい値を超えてる場合、その頂点はスキップする。
+ * さらに、距離がdistance_threshold未満であること。
+ */
+bool GraphUtil::getVertexExceptDeadend(RoadGraph& roads, RoadVertexDesc srcDesc, float distance_threshold, float angle, float angle_threshold, RoadVertexDesc& nearest_desc, bool onlyValidVertex) {
+	float distance_threshold2 = distance_threshold * distance_threshold;
+	float min_cost = std::numeric_limits<float>::max();
+	bool found = false;;
+
+	RoadVertexIter vi, vend;
+	for (boost::tie(vi, vend) = boost::vertices(roads.graph); vi != vend; ++vi) {
+		if (onlyValidVertex && !roads.graph[*vi]->valid) continue;
+		if (*vi == srcDesc) continue;
+
+		if (roads.graph[*vi]->deadend) continue;
+
+		QVector2D vec = roads.graph[*vi]->getPt() - roads.graph[srcDesc]->pt;
+		float angle2 = atan2f(vec.y(), vec.x());
+		if (Util::diffAngle(angle, angle2) > angle_threshold) continue;
+
+		float dist = vec.lengthSquared();
+		if (dist > distance_threshold2) continue;
+
+		// 適当なコスト関数で、最適な頂点を探す。
+		// 基本的には、距離が近く、角度の差が小さいやつ。でも、係数はむずかしい。。。
+		float cost = dist + Util::diffAngle(angle, angle2) * 1000.0;
+
+		if (cost < min_cost) {
+			min_cost = cost;
+			nearest_desc = *vi;
+			found = true;
+		}
+	}
+
+	return found;
+}
+
+/**
  * Find the closest vertex from the specified point. 
  * If the closet vertex is within the threshold, return true. Otherwise, return false.
  */

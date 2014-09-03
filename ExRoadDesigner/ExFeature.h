@@ -14,6 +14,7 @@
 
 class ExFeature {
 public:
+	int ex_id;
 	Polygon2D area;
 	RoadGraph avenues;
 	RoadGraph reducedAvenues;

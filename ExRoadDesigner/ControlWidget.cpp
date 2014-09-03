@@ -24,7 +24,7 @@ ControlWidget::ControlWidget(MainWindow* mainWin) : QDockWidget("Control Widget"
 	ui.checkBoxUseLayer->setChecked(true);
 	ui.checkBoxRemoveSmallBlocks->setChecked(false);
 	ui.lineEditMinBlockSize->setText("10000");
-	ui.lineEditHoughScale->setText("0.1");
+	ui.lineEditHoughScale->setText("500.0");
 	ui.lineEditPatchDistance1->setText("100");
 	ui.lineEditPatchDistance2->setText("20");
 	ui.lineEditInterpolateSigma1->setText("0.2");
@@ -118,6 +118,7 @@ void ControlWidget::generateRoadsTest() {
 		if (filename.isEmpty()) return;
 	
 		features[i].load(filename, false);
+		features[i].ex_id = i;
 	}
 
 	mainWin->urbanGeometry->generateRoadsTest(features);

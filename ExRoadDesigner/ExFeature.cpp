@@ -361,9 +361,9 @@ void ExFeature::savePatchImages(int roadType, RoadGraph& roads, std::vector<Patc
 
 		char filename[255];
 		if (roadType == RoadEdge::TYPE_AVENUE) {
-			sprintf(filename, "patches/avenue_patch_%d.jpg", i);
+			sprintf(filename, "patches/avenue%d_patch_%d.jpg", ex_id, i);
 		} else {
-			sprintf(filename, "patches/street_patch_%d.jpg", i);
+			sprintf(filename, "patches/street%d_patch_%d.jpg", ex_id, i);
 		}
 		//cv::flip(img, img, 0);
 		cv::imwrite(filename, img);
@@ -402,9 +402,9 @@ void ExFeature::savePatchImages(int roadType, RoadGraph& roads, std::vector<Patc
 		}
 
 		if (roadType == RoadEdge::TYPE_AVENUE) {
-			cv::imwrite("patches/avenue_patch_ids.jpg", img);
+			cv::imwrite("patches/avenue%d_patch_ids.jpg", ex_id, img);
 		} else {
-			cv::imwrite("patches/street_patch_ids.jpg", img);
+			cv::imwrite("patches/street%d_patch_ids.jpg", ex_id, img);
 		}
 	}
 }
