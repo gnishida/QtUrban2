@@ -102,10 +102,7 @@ void PatchRoadGenerator::generateRoadNetwork() {
 
 	// Avenueをクリーンナップ
 	if (G::getBool("cleanAvenues")) {
-		RoadGeneratorHelper::extendDanglingEdges(roads, 300.0f);
-		RoadGeneratorHelper::removeDeadend(roads);
-		//GraphUtil::reduce(roads);
-		//GraphUtil::removeLoop(roads);
+		removeDeadend(roads);
 	}
 
 	if (G::getBool("removeSmallBlocks")) {
@@ -1222,4 +1219,36 @@ int PatchRoadGenerator::defineExId(const QVector2D& pt) {
 	}
 
 	return features.size() - 1;
+}
+
+void PatchRoadGenerator::removeDeadend(RoadGraph& roads) {
+	bool removed = false;
+
+	do {
+		removed = false;
+
+		RoadEdgeIter ei, eend;
+		for (boost::tie(ei, eend) = boost::edges(roads.graph); ei != eend; ++ei) {
+			if (!roads.graph[*ei]->valid) continue;
+
+			RoadVertexDesc src = boost::source(*ei, roads.graph);
+			RoadVertexDesc tgt = boost::target(*ei, roads.graph);
+
+			if (roads.graph[src]->onBoundary || roads.graph[tgt]->onBoundary) continue;
+			if (roads.graph[src]->deadend) continue;
+			if (roads.graph[tgt]->deadend) continue;
+			if (roads.graph[src]->fixed || roads.graph[tgt]->fixed) continue;
+
+
+			if (GraphUtil::getDegree(roads, src) == 1) {
+				removeEdge(roads, src, *ei);
+				removed = true;
+			}
+			
+			if (GraphUtil::getDegree(roads, tgt) == 1) {
+				removeEdge(roads, tgt, *ei);
+				removed = true;
+			}
+		}
+	} while (removed);
 }
