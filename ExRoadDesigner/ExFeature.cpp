@@ -401,11 +401,13 @@ void ExFeature::savePatchImages(int roadType, RoadGraph& roads, std::vector<Patc
 			cv::putText(img, str.toUtf8().data(), cv::Point(x, y), cv::FONT_HERSHEY_SCRIPT_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
 		}
 
+		char filename[255];
 		if (roadType == RoadEdge::TYPE_AVENUE) {
-			cv::imwrite("patches/avenue%d_patch_ids.jpg", ex_id, img);
+			sprintf(filename, "patches/avenue%d_patch_ids.jpg", ex_id);
 		} else {
-			cv::imwrite("patches/street%d_patch_ids.jpg", ex_id, img);
+			sprintf(filename, "patches/street%d_patch_ids.jpg", ex_id);
 		}
+		cv::imwrite(filename, img);
 	}
 }
 
