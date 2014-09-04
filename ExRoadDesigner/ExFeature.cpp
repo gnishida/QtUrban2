@@ -298,8 +298,10 @@ void ExFeature::savePatchImages(int roadType, RoadGraph& roads, std::vector<Patc
 	// 画像の大きさを決定
 	BBox bbox = GraphUtil::getAABoundingBox(roads);
 
+	int width = 3;
+
 	for (int i = 0; i < patches.size(); ++i) {
-		cv::Mat img((int)(bbox.dy() + 1), (int)(bbox.dx() + 1), CV_8UC3, cv::Scalar(0, 0, 0));
+		cv::Mat img((int)(bbox.dy() + 1), (int)(bbox.dx() + 1), CV_8UC3, cv::Scalar(255, 255, 255));
 
 		// 画像に、全パッチを描画する
 		for (int j2 = 0; j2 < patches.size(); ++j2) {
@@ -311,7 +313,7 @@ void ExFeature::savePatchImages(int roadType, RoadGraph& roads, std::vector<Patc
 					int x2 = patches[j2].roads.graph[*ei]->polyline[pl+1].x() - bbox.minPt.x();
 					int y2 = img.rows - (patches[j2].roads.graph[*ei]->polyline[pl+1].y() - bbox.minPt.y());
 
-					cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 255, 255), 3);
+					cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(232, 232, 232), width);
 				}
 			}
 		}
@@ -326,7 +328,7 @@ void ExFeature::savePatchImages(int roadType, RoadGraph& roads, std::vector<Patc
 					int x2 = patches[i].roads.graph[*ei]->polyline[pl+1].x() - bbox.minPt.x();
 					int y2 = img.rows - (patches[i].roads.graph[*ei]->polyline[pl+1].y() - bbox.minPt.y());
 
-					cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 0, 0), 3);
+					cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 0, 0), width);
 				}
 			}
 
@@ -355,7 +357,7 @@ void ExFeature::savePatchImages(int roadType, RoadGraph& roads, std::vector<Patc
 
 				// 頂点IDと、元のexampleの頂点IDを描画
 				QString str = QString::number(*vi) + "/" + QString::number(patches[i].roads.graph[*vi]->properties["example_desc"].toUInt());
-				cv::putText(img, str.toUtf8().data(), cv::Point(x, y), cv::FONT_HERSHEY_SCRIPT_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
+				cv::putText(img, str.toUtf8().data(), cv::Point(x, y), cv::FONT_HERSHEY_SCRIPT_SIMPLEX, 0.5, cv::Scalar(0, 128, 0), 1);
 			}
 		}
 
@@ -371,7 +373,7 @@ void ExFeature::savePatchImages(int roadType, RoadGraph& roads, std::vector<Patc
 
 	// 元のExample道路も描画（各頂点について、属するパッチIDを表示）
 	{
-		cv::Mat img((int)(bbox.dy() + 1), (int)(bbox.dx() + 1), CV_8UC3, cv::Scalar(0, 0, 0));
+		cv::Mat img((int)(bbox.dy() + 1), (int)(bbox.dx() + 1), CV_8UC3, cv::Scalar(255, 255, 255));
 
 		RoadEdgeIter ei, eend;
 		for (boost::tie(ei, eend) = boost::edges(roads.graph); ei != eend; ++ei) {
@@ -382,7 +384,7 @@ void ExFeature::savePatchImages(int roadType, RoadGraph& roads, std::vector<Patc
 				int y1 = img.rows - (roads.graph[*ei]->polyline[pl].y() - bbox.minPt.y());
 				int x2 = roads.graph[*ei]->polyline[pl+1].x() - bbox.minPt.x();
 				int y2 = img.rows - (roads.graph[*ei]->polyline[pl+1].y() - bbox.minPt.y());
-				cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(128, 128, 128), 3);
+				cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(0, 0, 0), width);
 			}
 		}
 
@@ -398,7 +400,7 @@ void ExFeature::savePatchImages(int roadType, RoadGraph& roads, std::vector<Patc
 				printf("ERROR!!!!!!!!!!!!!!  patchID should be >= 0.");
 			}
 			QString str = QString::number(roads.graph[*vi]->patchId);
-			cv::putText(img, str.toUtf8().data(), cv::Point(x, y), cv::FONT_HERSHEY_SCRIPT_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
+			cv::putText(img, str.toUtf8().data(), cv::Point(x, y), cv::FONT_HERSHEY_SCRIPT_SIMPLEX, 1, cv::Scalar(0, 128, 0), 2);
 		}
 
 		char filename[255];
