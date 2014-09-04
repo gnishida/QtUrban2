@@ -65,6 +65,7 @@ public:
 	static RoadVertexDesc splitEdge(RoadGraph &roads, RoadEdgeDesc edge_desc, const QVector2D& pt);
 	static RoadVertexDesc splitEdge(RoadGraph &roads, RoadEdgeDesc edge_desc, const QVector2D& pt, RoadEdgeDesc &edge1, RoadEdgeDesc &edge2);
 	static bool hasCloseEdge(RoadGraph* roads, RoadVertexDesc v1, RoadVertexDesc v2, float angle_threshold = 0.3f);
+	static bool isIntersect(RoadGraph &smallRoads, RoadGraph &largeRoads);
 	static bool isIntersect(RoadGraph &roads, const Polyline2D &polyline);
 	static bool isIntersect(RoadGraph &roads, const Polyline2D &polyline, QVector2D &intPoint);
 	static bool isIntersect(RoadGraph &roads, const Polyline2D &polyline, RoadVertexDesc srcDesc, QVector2D &intPoint);

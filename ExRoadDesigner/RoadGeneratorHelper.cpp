@@ -2337,3 +2337,58 @@ RoadVertexDesc RoadGeneratorHelper::createEdgesByExample2(RoadGraph &roads, floa
 
 	return v_desc;
 }
+
+/**
+ * 道路網を画像として保存する。
+ */
+void RoadGeneratorHelper::saveRoadImage(RoadGraph& roads, std::list<RoadVertexDesc>& seeds, const char* filename) {
+	BBox bbox = GraphUtil::getAABoundingBox(roads);
+	cv::Mat img(bbox.dy() + 1, bbox.dx() + 1, CV_8UC3, cv::Scalar(0, 0, 0));
+
+	RoadEdgeIter ei, eend;
+	for (boost::tie(ei, eend) = boost::edges(roads.graph); ei != eend; ++ei) {
+		if (!roads.graph[*ei]->valid) continue;
+
+		cv::Scalar color(128, 128, 128);
+		if (roads.graph[*ei]->type == RoadEdge::TYPE_STREET) {
+			color = cv::Scalar(192, 192, 192);
+		}
+
+		for (int pl = 0; pl < roads.graph[*ei]->polyline.size() - 1; ++pl) {
+			int x1 = roads.graph[*ei]->polyline[pl].x() - bbox.minPt.x();
+			int y1 = img.rows - (roads.graph[*ei]->polyline[pl].y() - bbox.minPt.y());
+			int x2 = roads.graph[*ei]->polyline[pl + 1].x() - bbox.minPt.x();
+			int y2 = img.rows - (roads.graph[*ei]->polyline[pl + 1].y() - bbox.minPt.y());
+			cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), color, 3);
+		}
+	}
+
+	RoadVertexIter vi, vend;
+	for (boost::tie(vi, vend) = boost::vertices(roads.graph); vi != vend; ++vi) {
+		if (!roads.graph[*vi]->valid) continue;
+
+		int x = roads.graph[*vi]->pt.x() - bbox.minPt.x();
+		int y = img.rows - (roads.graph[*vi]->pt.y() - bbox.minPt.y());
+
+		// seedを描画
+		if (std::find(seeds.begin(), seeds.end(), *vi) != seeds.end()) {
+			cv::circle(img, cv::Point(x, y), 6, cv::Scalar(255, 0, 0), 3);
+		}
+
+		// onBoundaryを描画
+		if (roads.graph[*vi]->onBoundary) {
+			cv::circle(img, cv::Point(x, y), 10, cv::Scalar(0, 255, 255), 3);
+		}
+
+		// deadendを描画
+		if (roads.graph[*vi]->deadend) {
+			cv::circle(img, cv::Point(x, y), 10, cv::Scalar(0, 0, 255), 3);
+		}
+
+		// 頂点IDを描画
+		QString str = QString::number(*vi);
+		cv::putText(img, str.toUtf8().data(), cv::Point(x, y), cv::FONT_HERSHEY_SCRIPT_SIMPLEX, 0.5, cv::Scalar(255, 255, 255), 1);
+	}
+
+	cv::imwrite(filename, img);
+}

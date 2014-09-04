@@ -305,6 +305,7 @@
     <ClCompile Include="VBOWater.cpp" />
     <ClCompile Include="VideoCaptureSettingDialog.cpp" />
     <ClCompile Include="VoronoiUtil.cpp" />
+    <ClCompile Include="WarpRoadGenerator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="MainWindow.h">
@@ -349,6 +350,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BBox.h" />
+    <ClInclude Include="WarpRoadGenerator.h" />
     <CustomBuild Include="BlendingVideoSettingDialog.h">
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Moc%27ing BlendingVideoSettingDialog.h...</Message>

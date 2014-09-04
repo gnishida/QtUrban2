@@ -17,6 +17,7 @@ public:
 	int patchId;
 	bool deadend;
 	bool onBoundary;
+	float rotationAngle;
 
 	QHash<QString, QVariant> properties;
 

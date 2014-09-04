@@ -1183,6 +1183,17 @@ bool GraphUtil::hasCloseEdge(RoadGraph* roads, RoadVertexDesc v1, RoadVertexDesc
 	return false;
 }
 
+bool GraphUtil::isIntersect(RoadGraph &smallRoads, RoadGraph &largeRoads) {
+	RoadEdgeIter ei, eend;
+	for (boost::tie(ei, eend) = boost::edges(smallRoads.graph); ei != eend; ++ei) {
+		if (!smallRoads.graph[*ei]->valid) continue;
+
+		if (GraphUtil::isIntersect(largeRoads, smallRoads.graph[*ei]->polyline)) return true;
+	}
+
+	return false;
+}
+
 /**
  * Check if the poly line intersects with the existing road segments.
  */
