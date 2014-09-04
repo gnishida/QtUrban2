@@ -21,6 +21,7 @@ public:
 
 public slots:
 	void generateRoadsTest();
+	void generateRoadsTestWarp();
 	void generateRoadsPatch();
 	//void generateRoadsPatchWarp();
 	void generateRoadsPatchWarp2();

@@ -95,6 +95,7 @@ void WarpRoadGenerator::generateRoadNetwork() {
 			iter++;
 		}
 	}
+	std::cout << "Avenue generation completed." << std::endl;
 
 	seeds.clear();
 
@@ -507,6 +508,43 @@ bool WarpRoadGenerator::attemptExpansion(int roadType, RoadVertexDesc srcDesc, i
 
 	// 次の対応パッチが決まっていない場合、
 	if (!exampleFound) {
+		Polyline2D polyline = GraphUtil::getAdjoiningPolyline(roads, srcDesc);
+
+		float min_cost = std::numeric_limits<float>::max();
+		RoadVertexDesc root_desc;
+		RoadVertexDesc connect_desc;
+
+		std::reverse(polyline.begin(), polyline.end());
+
+		// パッチはangle度回転させられるので、
+		// 事前に、polylineを-angle回転させて、一致するパッチを探す。
+		polyline.translate(-polyline[0]);
+		polyline.rotate(Util::rad2deg(-angle));
+		polyline.translate(polyline[0]);
+
+
+		for (int i = 0; i < patches.size(); ++i) {
+			// 現在の頂点が属するパッチと、同じパッチは、使わない。
+			// もし使っちゃったら、同じパッチが並んでしまう。
+			if (i == roads.graph[srcDesc]->patchId) continue;
+
+			RoadVertexDesc v_connector;
+			RoadVertexDesc v_root;
+			float cost = patches[i].getMinCost(polyline, v_connector, v_root);
+			if (cost < min_cost) {
+				min_cost = cost;
+				patch_id = i;
+				connect_desc = v_connector;
+				root_desc = v_root;
+			}
+		}
+
+		// streetの場合は、example_street_descにしないといけないか？
+		// いや、大丈夫。streetのパッチは、元のgraphの頂点IDを、やはりexample_descに格納しているから。
+		ex_v_desc = patches[patch_id].roads.graph[root_desc]->properties["example_desc"].toUInt();
+
+
+		buildReplacementGraphByExample2(roadType, replacementGraph, srcDesc, ex_id, f.roads(roadType), ex_v_desc, angle, patches[patch_id], patch_id, connect_desc, root_desc);
 
 	} else {
 		patch_id = f.roads(roadType).graph[ex_v_desc]->patchId;
