@@ -196,14 +196,8 @@
     <ClCompile Include="PatchMultiIntExRoadGenerator.cpp">
       <Filter>road generator</Filter>
     </ClCompile>
-    <ClCompile Include="PatchWarpRoadGenerator.cpp">
-      <Filter>road generator</Filter>
-    </ClCompile>
     <ClCompile Include="BSpline.cpp">
       <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="PatchTensorRoadGenerator.cpp">
-      <Filter>road generator</Filter>
     </ClCompile>
     <ClCompile Include="PMRoadGenerator.cpp">
       <Filter>road generator</Filter>
@@ -356,6 +350,9 @@
       <Filter>road</Filter>
     </ClCompile>
     <ClCompile Include="PatchRoadGenerator.cpp">
+      <Filter>road generator</Filter>
+    </ClCompile>
+    <ClCompile Include="PatchWarpRoadGenerator.cpp">
       <Filter>road generator</Filter>
     </ClCompile>
   </ItemGroup>
@@ -563,14 +560,8 @@
     <ClInclude Include="PatchMultiIntExRoadGenerator.h">
       <Filter>road generator</Filter>
     </ClInclude>
-    <ClInclude Include="PatchWarpRoadGenerator.h">
-      <Filter>road generator</Filter>
-    </ClInclude>
     <ClInclude Include="BSpline.h">
       <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="PatchTensorRoadGenerator.h">
-      <Filter>road generator</Filter>
     </ClInclude>
     <ClInclude Include="PMRoadGenerator.h">
       <Filter>road generator</Filter>
@@ -684,6 +675,9 @@
       <Filter>road</Filter>
     </ClInclude>
     <ClInclude Include="PatchRoadGenerator.h">
+      <Filter>road generator</Filter>
+    </ClInclude>
+    <ClInclude Include="PatchWarpRoadGenerator.h">
       <Filter>road generator</Filter>
     </ClInclude>
   </ItemGroup>

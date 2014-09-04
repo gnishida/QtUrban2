@@ -41,7 +41,6 @@ ControlWidget::ControlWidget(MainWindow* mainWin) : QDockWidget("Control Widget"
 	connect(ui.pushButtonGeneratePatch, SIGNAL(clicked()), this, SLOT(generateRoadsPatch()));
 	//connect(ui.pushButtonGeneratePatchWarp, SIGNAL(clicked()), this, SLOT(generateRoadsPatchWarp()));
 	connect(ui.pushButtonGeneratePatchWarp2, SIGNAL(clicked()), this, SLOT(generateRoadsPatchWarp2()));
-	//connect(ui.pushButtonGenerateVerySmoothWarp, SIGNAL(clicked()), this, SLOT(generateRoadsVerySmoothWarp()));
 	connect(ui.pushButtonGeneratePM, SIGNAL(clicked()), this, SLOT(generateRoadsPM()));
 	connect(ui.pushButtonClear, SIGNAL(clicked()), this, SLOT(clear()));
 	//connect(ui.pushButtonConnect, SIGNAL(clicked()), this, SLOT(connectRoads()));
@@ -166,6 +165,7 @@ void ControlWidget::generateRoadsPatch() {
 	mainWin->glWidget->updateGL();
 }
 
+/*
 void ControlWidget::generateRoadsPatchWarp() {
 	if (mainWin->urbanGeometry->areas.selectedIndex == -1) return;
 
@@ -204,6 +204,7 @@ void ControlWidget::generateRoadsPatchWarp() {
 	
 	mainWin->glWidget->updateGL();
 }
+*/
 
 void ControlWidget::generateRoadsPatchWarp2() {
 	if (mainWin->urbanGeometry->areas.selectedIndex == -1) return;
@@ -240,45 +241,6 @@ void ControlWidget::generateRoadsPatchWarp2() {
 	}
 
 	mainWin->urbanGeometry->generateRoadsPatchWarp2(features);
-	
-	mainWin->glWidget->updateGL();
-}
-
-void ControlWidget::generateRoadsVerySmoothWarp() {
-	if (mainWin->urbanGeometry->areas.selectedIndex == -1) return;
-
-	G::global()["numAvenueIterations"] = ui.lineEditNumAvenueIterations->text().toInt();
-	G::global()["numStreetIterations"] = ui.lineEditNumStreetIterations->text().toInt();
-	int numExamples = ui.lineEditNumExamples->text().toInt();
-	G::global()["cleanAvenues"] = ui.checkBoxCleanAvenues->isChecked();
-	G::global()["cleanStreets"] = ui.checkBoxCleanStreets->isChecked();
-	G::global()["generateLocalStreets"] = ui.checkBoxLocalStreets->isChecked();
-	G::global()["cropping"] = ui.checkBoxCropping->isChecked();
-	G::global()["useLayer"] = ui.checkBoxUseLayer->isChecked();
-	G::global()["removeSmallBlocks"] = ui.checkBoxRemoveSmallBlocks->isChecked();
-	G::global()["minBlockSize"] = ui.lineEditMinBlockSize->text().toFloat();
-
-	G::global()["houghScale"] = ui.lineEditHoughScale->text().toFloat();
-	G::global()["avenuePatchDistance"] = ui.lineEditPatchDistance1->text().toFloat();
-	G::global()["streetPatchDistance"] = ui.lineEditPatchDistance2->text().toFloat();
-	G::global()["interpolationSigma1"] = ui.lineEditInterpolateSigma1->text().toFloat();
-	G::global()["interpolationSigma2"] = ui.lineEditInterpolateSigma2->text().toFloat();
-	G::global()["interpolationThreshold1"] = ui.lineEditInterpolateThreshold1->text().toFloat();
-	G::global()["roadSnapFactor"] = ui.lineEditRoadSnapFactor->text().toFloat();
-	G::global()["roadAngleTolerance"] = ui.lineEditRoadAngleTolerance->text().toFloat() / 180.0f * M_PI;
-	G::global()["rotationForSteepSlope"] = ui.lineEditRotationForSteepSlope->text().toFloat() / 180.0f * M_PI;
-
-	std::vector<ExFeature> features;
-	features.resize(numExamples);
-	for (int i = 0; i < numExamples; ++i) {
-		QString filename = QFileDialog::getOpenFileName(this, tr("Open Feature file..."), "", tr("StreetMap Files (*.xml)"));
-		if (filename.isEmpty()) return;
-	
-		features[i].load(filename, false);
-		//features[i].detectShapes(ui.lineEditPatchDistance1->text().toFloat(), ui.lineEditPatchDistance2->text().toFloat());
-	}
-
-	mainWin->urbanGeometry->generateRoadsVerySmoothWarp(features);
 	
 	mainWin->glWidget->updateGL();
 }

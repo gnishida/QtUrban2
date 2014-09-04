@@ -22,9 +22,8 @@ public:
 public slots:
 	void generateRoadsTest();
 	void generateRoadsPatch();
-	void generateRoadsPatchWarp();
+	//void generateRoadsPatchWarp();
 	void generateRoadsPatchWarp2();
-	void generateRoadsVerySmoothWarp();
 	void generateRoadsPM();
 	void clear();
 	void mergeRoads();

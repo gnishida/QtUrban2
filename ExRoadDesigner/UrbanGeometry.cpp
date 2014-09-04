@@ -26,7 +26,6 @@ This file is part of QtUrban.
 #include "PatchMultiIntExRoadGenerator.h"
 #include "PatchWarpRoadGenerator.h"
 #include "PatchWarp2RoadGenerator.h"
-#include "PatchTensorRoadGenerator.h"
 #include "PMRoadGenerator.h"
 #include "RoadGeneratorHelper.h"
 #include "MainWindow.h"
@@ -121,21 +120,6 @@ void UrbanGeometry::generateRoadsPatchWarp2(std::vector<ExFeature> &features) {
 		areas.selectedArea()->roads.adaptToTerrain(&mainWin->glWidget->vboRenderManager);
 	} else {
 		PatchWarp2RoadGenerator generator(mainWin, roads, areas.selectedArea()->area, areas.selectedArea()->hintLine, &mainWin->glWidget->vboRenderManager, features);
-		generator.generateRoadNetwork();
-		roads.adaptToTerrain(&mainWin->glWidget->vboRenderManager);
-	}
-}
-
-void UrbanGeometry::generateRoadsVerySmoothWarp(std::vector<ExFeature> &features) {
-	if (areas.selectedIndex == -1) return;
-	if (areas.selectedArea()->hintLine.size() == 0) return;
-	
-	if (G::getBool("useLayer")) {
-		PatchTensorRoadGenerator generator(mainWin, areas.selectedArea()->roads, areas.selectedArea()->area, areas.selectedArea()->hintLine, &mainWin->glWidget->vboRenderManager, features);
-		generator.generateRoadNetwork();
-		areas.selectedArea()->roads.adaptToTerrain(&mainWin->glWidget->vboRenderManager);
-	} else {
-		PatchTensorRoadGenerator generator(mainWin, roads, areas.selectedArea()->area, areas.selectedArea()->hintLine, &mainWin->glWidget->vboRenderManager, features);
 		generator.generateRoadNetwork();
 		roads.adaptToTerrain(&mainWin->glWidget->vboRenderManager);
 	}
