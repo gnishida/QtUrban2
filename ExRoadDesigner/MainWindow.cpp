@@ -14,6 +14,7 @@
 #include "InterpolationVideoSettingDialog.h"
 #include "RotationVideoSettingDialog.h"
 #include "StructureDetectionSettingDialog.h"
+#include "RoadGeneratorHelper.h"
 
 MainWindow::MainWindow(QWidget *parent, Qt::WFlags flags) : QMainWindow(parent, flags) {
 	ui.setupUi(this);
@@ -338,7 +339,7 @@ void MainWindow::onDetectCircle() {
 	CircleDetectionScaleInputDialog dlg(this);
 	if (dlg.exec() == QDialog::Accepted) {
 		CircleHoughTransform ht;
-		urbanGeometry->shapes = ht.detect(urbanGeometry->roads, dlg.scale);
+		urbanGeometry->shapes = ht.detect(urbanGeometry->roads, dlg.scale, 50.0f);
 		glWidget->updateGL();
 	}
 }
@@ -347,6 +348,13 @@ void MainWindow::onDetectStructure() {
 	StructureDetectionSettingDialog dlg(this);
 	if (dlg.exec() == QDialog::Accepted) {
 		urbanGeometry->shapes = ShapeDetector::detect(urbanGeometry->roads, dlg.scale, dlg.distance);
+
+		std::vector<Patch> patches;
+		patches = RoadGeneratorHelper::convertToPatch(RoadEdge::TYPE_AVENUE, urbanGeometry->roads, urbanGeometry->roads, urbanGeometry->shapes);
+
+		// save patch images
+		ExFeature::savePatchImages(RoadEdge::TYPE_AVENUE, 0, urbanGeometry->roads, patches, false);
+
 		glWidget->updateGL();
 	}
 }

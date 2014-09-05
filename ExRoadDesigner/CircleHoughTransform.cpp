@@ -1,7 +1,11 @@
 ﻿#include "CircleHoughTransform.h"
 #include "GraphUtil.h"
 
-std::vector<RoadEdgeDescs> CircleHoughTransform::detect(RoadGraph &roads, float maxRadius) {
+/**
+ * Hough Transformにより円を検出する。
+ * houghThreshold は、デフォルトは100だが、50ぐらいにしないと、小さい円を検知しない。
+ */
+std::vector<RoadEdgeDescs> CircleHoughTransform::detect(RoadGraph &roads, float maxRadius, float houghThreshold) {
 	BBox bbox = GraphUtil::bbox(roads);
 
 	cv::Mat img(bbox.dy(), bbox.dx(), CV_8U, cv::Scalar(0));
@@ -14,7 +18,7 @@ std::vector<RoadEdgeDescs> CircleHoughTransform::detect(RoadGraph &roads, float 
 			int y1 = roads.graph[*ei]->polyline[pl].y() - bbox.minPt.y();
 			int x2 = roads.graph[*ei]->polyline[pl + 1].x() - bbox.minPt.x();
 			int y2 = roads.graph[*ei]->polyline[pl + 1].y() - bbox.minPt.y();
-			cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255), 4);
+			cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255), 3);
 		}
 	}
 
@@ -23,7 +27,7 @@ std::vector<RoadEdgeDescs> CircleHoughTransform::detect(RoadGraph &roads, float 
 	std::vector<cv::Vec3f> circles;
 
 	// Apply the Hough Transform to find the circles
-	cv::HoughCircles(img, circles, CV_HOUGH_GRADIENT, 1, img.rows/8, 200, 100, 0, 0);
+	cv::HoughCircles(img, circles, CV_HOUGH_GRADIENT, 1, img.rows/8, 200, houghThreshold, 0, maxRadius);
 
 	QMap<RoadEdgeDesc, bool> usedEdges;
 	std::vector<RoadEdgeDescs> edges;
@@ -33,9 +37,6 @@ std::vector<RoadEdgeDescs> CircleHoughTransform::detect(RoadGraph &roads, float 
 		float cx = circles[i][0] + bbox.minPt.x();
 		float cy = circles[i][1] + bbox.minPt.y();
 		float cr = circles[i][2];
-
-		// 半径が、指定された最大値より大きい場合、この円を除外する。
-		if (cr > maxRadius) continue;
 
 		RoadEdgeDescs circle_edges;
 

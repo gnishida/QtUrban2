@@ -14,7 +14,7 @@ std::vector<RoadEdgeDescs> ShapeDetector::detect(RoadGraph &roads, float maxRadi
 
 	std::vector<RoadEdgeDescs> shapes;
 	// detect circles
-	shapes = CircleHoughTransform::detect(roads, maxRadius);
+	shapes = CircleHoughTransform::detect(roads, maxRadius, 50.0f);
 	time_t start = clock();
 	for (int i = 0; i < shapes.size(); ++i) {
 		for (int j = 0; j < shapes[i].size(); ++j) {

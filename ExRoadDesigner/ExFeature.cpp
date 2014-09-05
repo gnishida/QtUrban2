@@ -294,9 +294,11 @@ void ExFeature::saveHintLine(QDomDocument &doc, QDomNode &parent) {
 /**
  * パッチを画像として保存する。
  */
-void ExFeature::savePatchImages(int roadType, RoadGraph& roads, std::vector<Patch> patches) {
+void ExFeature::savePatchImages(int roadType, int ex_id, RoadGraph& roads, std::vector<Patch> patches, bool label) {
 	// 画像の大きさを決定
-	BBox bbox = GraphUtil::getAABoundingBox(roads);
+	BBox bbox = GraphUtil::getAABoundingBox(roads, true);
+	bbox.minPt -= QVector2D(10.0f, 10.0f);
+	bbox.maxPt += QVector2D(10.0f, 10.0f);
 
 	int width = 3;
 
@@ -313,7 +315,7 @@ void ExFeature::savePatchImages(int roadType, RoadGraph& roads, std::vector<Patc
 					int x2 = patches[j2].roads.graph[*ei]->polyline[pl+1].x() - bbox.minPt.x();
 					int y2 = img.rows - (patches[j2].roads.graph[*ei]->polyline[pl+1].y() - bbox.minPt.y());
 
-					cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(232, 232, 232), width);
+					cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(248, 248, 248), width);
 				}
 			}
 		}
@@ -332,32 +334,46 @@ void ExFeature::savePatchImages(int roadType, RoadGraph& roads, std::vector<Patc
 				}
 			}
 
-			// コネクタの描画 (灰色の×)
-			for (int ci = 0; ci < patches[i].connectors.size(); ++ci) {
-				int x = patches[i].roads.graph[patches[i].connectors[ci]]->pt.x() - bbox.minPt.x();
-				int y = img.rows - (patches[i].roads.graph[patches[i].connectors[ci]]->pt.y() - bbox.minPt.y());
-				cv::line(img, cv::Point(x - 10, y - 10), cv::Point(x + 10, y + 10), cv::Scalar(128, 128, 128), 5);
-				cv::line(img, cv::Point(x + 10, y - 10), cv::Point(x - 10, y + 10), cv::Scalar(128, 128, 128), 5);
+			// 頂点の描画
+			{
+				RoadVertexIter vi, vend;
+				for (boost::tie(vi, vend) = boost::vertices(patches[i].roads.graph); vi != vend; ++vi) {
+					int x = patches[i].roads.graph[*vi]->pt.x() - bbox.minPt.x();
+					int y = img.rows - (patches[i].roads.graph[*vi]->pt.y() - bbox.minPt.y());
+
+					// 頂点の描画 (青色の円)
+					cv::circle(img, cv::Point(x, y), width * 2, cv::Scalar(255, 0, 0), -1);
+				}
 			}
 
-			RoadVertexIter vi, vend;
-			for (boost::tie(vi, vend) = boost::vertices(patches[i].roads.graph); vi != vend; ++vi) {
-				int x = patches[i].roads.graph[*vi]->pt.x() - bbox.minPt.x();
-				int y = img.rows - (patches[i].roads.graph[*vi]->pt.y() - bbox.minPt.y());
-
-				// onBoundaryの描画 (黄色の円)
-				if (patches[i].roads.graph[*vi]->onBoundary) {
-					cv::circle(img, cv::Point(x, y), 10, cv::Scalar(0, 255, 255), 5);
+			if (label) {
+				// コネクタの描画 (灰色の×)
+				for (int ci = 0; ci < patches[i].connectors.size(); ++ci) {
+					int x = patches[i].roads.graph[patches[i].connectors[ci]]->pt.x() - bbox.minPt.x();
+					int y = img.rows - (patches[i].roads.graph[patches[i].connectors[ci]]->pt.y() - bbox.minPt.y());
+					cv::line(img, cv::Point(x - 10, y - 10), cv::Point(x + 10, y + 10), cv::Scalar(128, 128, 128), 5);
+					cv::line(img, cv::Point(x + 10, y - 10), cv::Point(x - 10, y + 10), cv::Scalar(128, 128, 128), 5);
 				}
 
-				// deadendの描画 (赤色の円)
-				if (patches[i].roads.graph[*vi]->deadend) {
-					cv::circle(img, cv::Point(x, y), 10, cv::Scalar(0, 0, 255), 5);
-				}
+				RoadVertexIter vi, vend;
+				for (boost::tie(vi, vend) = boost::vertices(patches[i].roads.graph); vi != vend; ++vi) {
+					int x = patches[i].roads.graph[*vi]->pt.x() - bbox.minPt.x();
+					int y = img.rows - (patches[i].roads.graph[*vi]->pt.y() - bbox.minPt.y());
 
-				// 頂点IDと、元のexampleの頂点IDを描画
-				QString str = QString::number(*vi) + "/" + QString::number(patches[i].roads.graph[*vi]->properties["example_desc"].toUInt());
-				cv::putText(img, str.toUtf8().data(), cv::Point(x, y), cv::FONT_HERSHEY_SCRIPT_SIMPLEX, 0.5, cv::Scalar(0, 128, 0), 1);
+					// onBoundaryの描画 (黄色の円)
+					if (patches[i].roads.graph[*vi]->onBoundary) {
+						cv::circle(img, cv::Point(x, y), 10, cv::Scalar(0, 255, 255), 5);
+					}
+
+					// deadendの描画 (赤色の円)
+					if (patches[i].roads.graph[*vi]->deadend) {
+						cv::circle(img, cv::Point(x, y), 10, cv::Scalar(0, 0, 255), 5);
+					}
+
+					// 頂点IDと、元のexampleの頂点IDを描画
+					QString str = QString::number(*vi) + "/" + QString::number(patches[i].roads.graph[*vi]->properties["example_desc"].toUInt());
+					cv::putText(img, str.toUtf8().data(), cv::Point(x, y), cv::FONT_HERSHEY_SCRIPT_SIMPLEX, 0.5, cv::Scalar(0, 128, 0), 1);
+				}
 			}
 		}
 
@@ -388,19 +404,35 @@ void ExFeature::savePatchImages(int roadType, RoadGraph& roads, std::vector<Patc
 			}
 		}
 
-		RoadVertexIter vi, vend;
-		for (boost::tie(vi, vend) = boost::vertices(roads.graph); vi != vend; ++vi) {
-			if (!roads.graph[*vi]->valid) continue;
+		// 頂点を描画
+		{
+			RoadVertexIter vi, vend;
+			for (boost::tie(vi, vend) = boost::vertices(roads.graph); vi != vend; ++vi) {
+				if (!roads.graph[*vi]->valid) continue;
 
-			int x = roads.graph[*vi]->pt.x() - bbox.minPt.x();
-			int y = img.rows - (roads.graph[*vi]->pt.y() - bbox.minPt.y());
+				int x = roads.graph[*vi]->pt.x() - bbox.minPt.x();
+				int y = img.rows - (roads.graph[*vi]->pt.y() - bbox.minPt.y());
 
-			// 属するパッチIDを描画
-			if (roads.graph[*vi]->patchId < 0 && !roads.graph[*vi]->onBoundary) {
-				printf("ERROR!!!!!!!!!!!!!!  patchID should be >= 0.");
+				// 頂点の描画 (黒色の円)
+				cv::circle(img, cv::Point(x, y), width * 2, cv::Scalar(0, 0, 0), -1);
 			}
-			QString str = QString::number(roads.graph[*vi]->patchId);
-			cv::putText(img, str.toUtf8().data(), cv::Point(x, y), cv::FONT_HERSHEY_SCRIPT_SIMPLEX, 1, cv::Scalar(0, 128, 0), 2);
+		}
+
+		if (label) {
+			RoadVertexIter vi, vend;
+			for (boost::tie(vi, vend) = boost::vertices(roads.graph); vi != vend; ++vi) {
+				if (!roads.graph[*vi]->valid) continue;
+
+				int x = roads.graph[*vi]->pt.x() - bbox.minPt.x();
+				int y = img.rows - (roads.graph[*vi]->pt.y() - bbox.minPt.y());
+
+				// 属するパッチIDを描画
+				if (roads.graph[*vi]->patchId < 0 && !roads.graph[*vi]->onBoundary) {
+					printf("ERROR!!!!!!!!!!!!!!  patchID should be >= 0.");
+				}
+				QString str = QString::number(roads.graph[*vi]->patchId);
+				cv::putText(img, str.toUtf8().data(), cv::Point(x, y), cv::FONT_HERSHEY_SCRIPT_SIMPLEX, 1, cv::Scalar(0, 128, 0), 2);
+			}
 		}
 
 		char filename[255];
@@ -458,7 +490,8 @@ void ExFeature::detectAvenueShapes(float houghScale, float patchDistance) {
 	avenueShapes = ShapeDetector::detect(avenues, houghScale, patchDistance);
 	avenuePatches = RoadGeneratorHelper::convertToPatch(RoadEdge::TYPE_AVENUE, avenues, avenues, avenueShapes);
 
-	savePatchImages(RoadEdge::TYPE_AVENUE, avenues, avenuePatches);
+	// save patch images
+	savePatchImages(RoadEdge::TYPE_AVENUE, ex_id, avenues, avenuePatches, false);
 }
 
 void ExFeature::detectStreetShapes(float houghScale, float patchDistance) {
@@ -468,5 +501,6 @@ void ExFeature::detectStreetShapes(float houghScale, float patchDistance) {
 	streetShapes = ShapeDetector::detect(streets, houghScale, patchDistance);
 	streetPatches = RoadGeneratorHelper::convertToPatch(RoadEdge::TYPE_STREET, streets, avenues, streetShapes);
 
-	savePatchImages(RoadEdge::TYPE_STREET, streets, streetPatches);
+	// save patch images
+	savePatchImages(RoadEdge::TYPE_STREET, ex_id, streets, streetPatches, false);
 }

@@ -1,0 +1,14 @@
+<feature>
+    <area>
+        <point x="-5666.24609375" y="-4744.13134765625"/>
+        <point x="-5276.61328125" y="-4778.45458984375"/>
+        <point x="-5288.05419921875" y="-4979.9453125"/>
+        <point x="-5663.06787109375" y="-4962.78369140625"/>
+        <point x="-5666.24609375" y="-4744.13134765625"/>
+    </area>
+    <hintLine>
+        <point x="-5277.146484375" y="-5344.6669921875"/>
+    </hintLine>
+    <avenues filename="san-francisco.xml.avenues.gsm"/>
+    <streets filename="san-francisco.xml.streets.gsm"/>
+</feature>

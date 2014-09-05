@@ -2007,14 +2007,25 @@ void GraphUtil::connectRoads(RoadGraph& roads1, RoadGraph& roads2, float connect
 /**
  * Return the axix aligned bounding box of the road graph.
  */
-BBox GraphUtil::getAABoundingBox(RoadGraph& roads) {
+BBox GraphUtil::getAABoundingBox(RoadGraph& roads, bool checkPolyline) {
 	BBox box;
 
-	RoadVertexIter vi, vend;
-	for (boost::tie(vi, vend) = boost::vertices(roads.graph); vi != vend; ++vi) {
-		if (!roads.graph[*vi]->valid) continue;
+	if (checkPolyline) {
+		RoadEdgeIter ei, eend;
+		for (boost::tie(ei, eend) = boost::edges(roads.graph); ei != eend; ++ei) {
+			if (!roads.graph[*ei]->valid) continue;
 
-		box.addPoint(roads.graph[*vi]->getPt());
+			for (int pl = 0; pl < roads.graph[*ei]->polyline.size(); ++pl) {
+				box.addPoint(roads.graph[*ei]->polyline[pl]);
+			}
+		}
+	} else {
+		RoadVertexIter vi, vend;
+		for (boost::tie(vi, vend) = boost::vertices(roads.graph); vi != vend; ++vi) {
+			if (!roads.graph[*vi]->valid) continue;
+
+			box.addPoint(roads.graph[*vi]->getPt());
+		}
 	}
 
 	return box;
