@@ -353,7 +353,7 @@ void MainWindow::onDetectStructure() {
 		patches = RoadGeneratorHelper::convertToPatch(RoadEdge::TYPE_AVENUE, urbanGeometry->roads, urbanGeometry->roads, urbanGeometry->shapes);
 
 		// save patch images
-		ExFeature::savePatchImages(RoadEdge::TYPE_AVENUE, 0, urbanGeometry->roads, patches, false);
+		ExFeature::savePatchImages(RoadEdge::TYPE_AVENUE, 0, urbanGeometry->roads, patches, 10.0f, false);
 
 		glWidget->updateGL();
 	}

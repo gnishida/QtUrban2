@@ -294,26 +294,26 @@ void ExFeature::saveHintLine(QDomDocument &doc, QDomNode &parent) {
 /**
  * パッチを画像として保存する。
  */
-void ExFeature::savePatchImages(int roadType, int ex_id, RoadGraph& roads, std::vector<Patch> patches, bool label) {
+void ExFeature::savePatchImages(int roadType, int ex_id, RoadGraph& roads, std::vector<Patch> patches, float scale, bool label) {
 	// 画像の大きさを決定
 	BBox bbox = GraphUtil::getAABoundingBox(roads, true);
 	bbox.minPt -= QVector2D(10.0f, 10.0f);
 	bbox.maxPt += QVector2D(10.0f, 10.0f);
 
-	int width = 3;
+	int width = 3 * scale;
 
 	for (int i = 0; i < patches.size(); ++i) {
-		cv::Mat img((int)(bbox.dy() + 1), (int)(bbox.dx() + 1), CV_8UC3, cv::Scalar(255, 255, 255));
+		cv::Mat img((int)(bbox.dy() * scale), (int)(bbox.dx() * scale), CV_8UC3, cv::Scalar(255, 255, 255));
 
 		// 画像に、全パッチを描画する
 		for (int j2 = 0; j2 < patches.size(); ++j2) {
 			RoadEdgeIter ei, eend;
 			for (boost::tie(ei, eend) = boost::edges(patches[j2].roads.graph); ei != eend; ++ei) {
 				for (int pl = 0; pl < patches[j2].roads.graph[*ei]->polyline.size() - 1; ++pl) {
-					int x1 = patches[j2].roads.graph[*ei]->polyline[pl].x() - bbox.minPt.x();
-					int y1 = img.rows - (patches[j2].roads.graph[*ei]->polyline[pl].y() - bbox.minPt.y());
-					int x2 = patches[j2].roads.graph[*ei]->polyline[pl+1].x() - bbox.minPt.x();
-					int y2 = img.rows - (patches[j2].roads.graph[*ei]->polyline[pl+1].y() - bbox.minPt.y());
+					int x1 = (patches[j2].roads.graph[*ei]->polyline[pl].x() - bbox.minPt.x()) * scale;
+					int y1 = img.rows - (patches[j2].roads.graph[*ei]->polyline[pl].y() - bbox.minPt.y()) * scale;
+					int x2 = (patches[j2].roads.graph[*ei]->polyline[pl+1].x() - bbox.minPt.x()) * scale;
+					int y2 = img.rows - (patches[j2].roads.graph[*ei]->polyline[pl+1].y() - bbox.minPt.y()) * scale;
 
 					cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(248, 248, 248), width);
 				}
@@ -325,10 +325,10 @@ void ExFeature::savePatchImages(int roadType, int ex_id, RoadGraph& roads, std::
 			RoadEdgeIter ei, eend;
 			for (boost::tie(ei, eend) = boost::edges(patches[i].roads.graph); ei != eend; ++ei) {
 				for (int pl = 0; pl < patches[i].roads.graph[*ei]->polyline.size() - 1; ++pl) {
-					int x1 = patches[i].roads.graph[*ei]->polyline[pl].x() - bbox.minPt.x();
-					int y1 = img.rows - (patches[i].roads.graph[*ei]->polyline[pl].y() - bbox.minPt.y());
-					int x2 = patches[i].roads.graph[*ei]->polyline[pl+1].x() - bbox.minPt.x();
-					int y2 = img.rows - (patches[i].roads.graph[*ei]->polyline[pl+1].y() - bbox.minPt.y());
+					int x1 = (patches[i].roads.graph[*ei]->polyline[pl].x() - bbox.minPt.x()) * scale;
+					int y1 = img.rows - (patches[i].roads.graph[*ei]->polyline[pl].y() - bbox.minPt.y()) * scale;
+					int x2 = (patches[i].roads.graph[*ei]->polyline[pl+1].x() - bbox.minPt.x()) * scale;
+					int y2 = img.rows - (patches[i].roads.graph[*ei]->polyline[pl+1].y() - bbox.minPt.y()) * scale;
 
 					cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 0, 0), width);
 				}
@@ -338,27 +338,27 @@ void ExFeature::savePatchImages(int roadType, int ex_id, RoadGraph& roads, std::
 			{
 				RoadVertexIter vi, vend;
 				for (boost::tie(vi, vend) = boost::vertices(patches[i].roads.graph); vi != vend; ++vi) {
-					int x = patches[i].roads.graph[*vi]->pt.x() - bbox.minPt.x();
-					int y = img.rows - (patches[i].roads.graph[*vi]->pt.y() - bbox.minPt.y());
+					int x = (patches[i].roads.graph[*vi]->pt.x() - bbox.minPt.x()) * scale;
+					int y = img.rows - (patches[i].roads.graph[*vi]->pt.y() - bbox.minPt.y()) * scale;
 
 					// 頂点の描画 (青色の円)
-					cv::circle(img, cv::Point(x, y), width * 2, cv::Scalar(255, 0, 0), -1);
+					cv::circle(img, cv::Point(x, y), width * 1.5, cv::Scalar(255, 0, 0), -1);
 				}
 			}
 
 			if (label) {
 				// コネクタの描画 (灰色の×)
 				for (int ci = 0; ci < patches[i].connectors.size(); ++ci) {
-					int x = patches[i].roads.graph[patches[i].connectors[ci]]->pt.x() - bbox.minPt.x();
-					int y = img.rows - (patches[i].roads.graph[patches[i].connectors[ci]]->pt.y() - bbox.minPt.y());
+					int x = (patches[i].roads.graph[patches[i].connectors[ci]]->pt.x() - bbox.minPt.x()) * scale;
+					int y = img.rows - (patches[i].roads.graph[patches[i].connectors[ci]]->pt.y() - bbox.minPt.y()) *scale;
 					cv::line(img, cv::Point(x - 10, y - 10), cv::Point(x + 10, y + 10), cv::Scalar(128, 128, 128), 5);
 					cv::line(img, cv::Point(x + 10, y - 10), cv::Point(x - 10, y + 10), cv::Scalar(128, 128, 128), 5);
 				}
 
 				RoadVertexIter vi, vend;
 				for (boost::tie(vi, vend) = boost::vertices(patches[i].roads.graph); vi != vend; ++vi) {
-					int x = patches[i].roads.graph[*vi]->pt.x() - bbox.minPt.x();
-					int y = img.rows - (patches[i].roads.graph[*vi]->pt.y() - bbox.minPt.y());
+					int x = (patches[i].roads.graph[*vi]->pt.x() - bbox.minPt.x()) * scale;
+					int y = img.rows - (patches[i].roads.graph[*vi]->pt.y() - bbox.minPt.y()) * scale;
 
 					// onBoundaryの描画 (黄色の円)
 					if (patches[i].roads.graph[*vi]->onBoundary) {
@@ -389,17 +389,17 @@ void ExFeature::savePatchImages(int roadType, int ex_id, RoadGraph& roads, std::
 
 	// 元のExample道路も描画（各頂点について、属するパッチIDを表示）
 	{
-		cv::Mat img((int)(bbox.dy() + 1), (int)(bbox.dx() + 1), CV_8UC3, cv::Scalar(255, 255, 255));
+		cv::Mat img((int)(bbox.dy() * scale), (int)(bbox.dx() * scale), CV_8UC3, cv::Scalar(255, 255, 255));
 
 		RoadEdgeIter ei, eend;
 		for (boost::tie(ei, eend) = boost::edges(roads.graph); ei != eend; ++ei) {
 			if (!roads.graph[*ei]->valid) continue;
 
 			for (int pl = 0; pl < roads.graph[*ei]->polyline.size() - 1; ++pl) {
-				int x1 = roads.graph[*ei]->polyline[pl].x() - bbox.minPt.x();
-				int y1 = img.rows - (roads.graph[*ei]->polyline[pl].y() - bbox.minPt.y());
-				int x2 = roads.graph[*ei]->polyline[pl+1].x() - bbox.minPt.x();
-				int y2 = img.rows - (roads.graph[*ei]->polyline[pl+1].y() - bbox.minPt.y());
+				int x1 = (roads.graph[*ei]->polyline[pl].x() - bbox.minPt.x()) * scale;
+				int y1 = img.rows - (roads.graph[*ei]->polyline[pl].y() - bbox.minPt.y()) * scale;
+				int x2 = (roads.graph[*ei]->polyline[pl+1].x() - bbox.minPt.x()) * scale;
+				int y2 = img.rows - (roads.graph[*ei]->polyline[pl+1].y() - bbox.minPt.y()) * scale;
 				cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(0, 0, 0), width);
 			}
 		}
@@ -410,11 +410,11 @@ void ExFeature::savePatchImages(int roadType, int ex_id, RoadGraph& roads, std::
 			for (boost::tie(vi, vend) = boost::vertices(roads.graph); vi != vend; ++vi) {
 				if (!roads.graph[*vi]->valid) continue;
 
-				int x = roads.graph[*vi]->pt.x() - bbox.minPt.x();
-				int y = img.rows - (roads.graph[*vi]->pt.y() - bbox.minPt.y());
+				int x = (roads.graph[*vi]->pt.x() - bbox.minPt.x()) * scale;
+				int y = img.rows - (roads.graph[*vi]->pt.y() - bbox.minPt.y()) * scale;
 
 				// 頂点の描画 (黒色の円)
-				cv::circle(img, cv::Point(x, y), width * 2, cv::Scalar(0, 0, 0), -1);
+				cv::circle(img, cv::Point(x, y), width * 1.5, cv::Scalar(0, 0, 0), -1);
 			}
 		}
 
@@ -423,8 +423,8 @@ void ExFeature::savePatchImages(int roadType, int ex_id, RoadGraph& roads, std::
 			for (boost::tie(vi, vend) = boost::vertices(roads.graph); vi != vend; ++vi) {
 				if (!roads.graph[*vi]->valid) continue;
 
-				int x = roads.graph[*vi]->pt.x() - bbox.minPt.x();
-				int y = img.rows - (roads.graph[*vi]->pt.y() - bbox.minPt.y());
+				int x = (roads.graph[*vi]->pt.x() - bbox.minPt.x()) * scale;
+				int y = img.rows - (roads.graph[*vi]->pt.y() - bbox.minPt.y()) * scale;
 
 				// 属するパッチIDを描画
 				if (roads.graph[*vi]->patchId < 0 && !roads.graph[*vi]->onBoundary) {
@@ -491,7 +491,7 @@ void ExFeature::detectAvenueShapes(float houghScale, float patchDistance) {
 	avenuePatches = RoadGeneratorHelper::convertToPatch(RoadEdge::TYPE_AVENUE, avenues, avenues, avenueShapes);
 
 	// save patch images
-	savePatchImages(RoadEdge::TYPE_AVENUE, ex_id, avenues, avenuePatches, false);
+	savePatchImages(RoadEdge::TYPE_AVENUE, ex_id, avenues, avenuePatches, 1.0f, true);
 }
 
 void ExFeature::detectStreetShapes(float houghScale, float patchDistance) {
@@ -502,5 +502,5 @@ void ExFeature::detectStreetShapes(float houghScale, float patchDistance) {
 	streetPatches = RoadGeneratorHelper::convertToPatch(RoadEdge::TYPE_STREET, streets, avenues, streetShapes);
 
 	// save patch images
-	savePatchImages(RoadEdge::TYPE_STREET, ex_id, streets, streetPatches, false);
+	savePatchImages(RoadEdge::TYPE_STREET, ex_id, streets, streetPatches, 1.0f, true);
 }
