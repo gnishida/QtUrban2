@@ -288,7 +288,9 @@ bool PatchRoadGenerator::attemptConnect(int roadType, RoadVertexDesc srcDesc, in
 		length = features[ex_id].avgStreetLength;
 	}
 
-	float roadAngleTolerance = G::getFloat("roadAngleTolerance");
+	// スナップする際、許容できる角度
+	// attemptConnectでは、許容できる角度を厳しくしてみる。
+	float roadAngleTolerance = G::getFloat("roadAngleTolerance") * 2.0f;
 
 	std::vector<RoadEdgePtr> edges;
 
@@ -360,6 +362,27 @@ bool PatchRoadGenerator::attemptConnect(int roadType, RoadVertexDesc srcDesc, in
 			RoadEdgePtr e = RoadEdgePtr(new RoadEdge(roadType, 1));
 			e->polyline.push_back(roads.graph[srcDesc]->pt);
 			e->polyline.push_back(roads.graph[nearestDesc]->pt);
+
+			// スナップ先にとってredundantなら、コネクトしないで、終了。
+			// つまり、trueを返却して、終わったことにしちゃう。
+			/*
+			if (roadType == RoadEdge::TYPE_AVENUE) {
+				Polyline2D e2;
+				e2.push_back(QVector2D(0, 0));
+				e2.push_back(roads.graph[srcDesc]->pt - roads.graph[nearestDesc]->pt);
+				if (RoadGeneratorHelper::isRedundantEdge(roads, nearestDesc, e2, roadAngleTolerance)) {
+					// もしdegree=1なら、連なるエッジをごっそり削除
+					if (roadType == RoadEdge::TYPE_AVENUE && GraphUtil::getDegree(roads, srcDesc) == 1) {
+						RoadOutEdgeIter ei, eend;
+						for (boost::tie(ei, eend) = boost::out_edges(srcDesc, roads.graph); ei != eend; ++ei) {
+							removeEdge(roads, srcDesc, *ei);
+						}
+					}
+
+					return true;
+				}
+			}
+			*/
 
 			if (!GraphUtil::isIntersect(roads, e->polyline)) {
 				RoadEdgeDesc e_desc = GraphUtil::addEdge(roads, srcDesc, nearestDesc, e);
@@ -441,6 +464,27 @@ bool PatchRoadGenerator::attemptConnect(int roadType, RoadVertexDesc srcDesc, in
 			RoadEdgePtr e = RoadEdgePtr(new RoadEdge(roadType, 1));
 			e->polyline.push_back(roads.graph[srcDesc]->pt);
 			e->polyline.push_back(roads.graph[nearestDesc]->pt);
+
+			// スナップ先にとってredundantなら、コネクトしないで、終了。
+			// つまり、trueを返却して、終わったことにしちゃう。
+			/*
+			if (roadType == RoadEdge::TYPE_AVENUE) {
+				Polyline2D e2;
+				e2.push_back(QVector2D(0, 0));
+				e2.push_back(roads.graph[srcDesc]->pt - roads.graph[nearestDesc]->pt);
+				if (RoadGeneratorHelper::isRedundantEdge(roads, nearestDesc, e2, roadAngleTolerance)) {
+					// もしdegree=1なら、連なるエッジをごっそり削除
+					if (roadType == RoadEdge::TYPE_AVENUE && GraphUtil::getDegree(roads, srcDesc) == 1) {
+						RoadOutEdgeIter ei, eend;
+						for (boost::tie(ei, eend) = boost::out_edges(srcDesc, roads.graph); ei != eend; ++ei) {
+							removeEdge(roads, srcDesc, *ei);
+						}
+					}
+
+					return true;
+				}
+			}
+			*/
 
 			if (!GraphUtil::isIntersect(roads, e->polyline)) {
 				RoadEdgeDesc e_desc = GraphUtil::addEdge(roads, srcDesc, nearestDesc, e);
@@ -1086,6 +1130,8 @@ void PatchRoadGenerator::removeEdge(RoadGraph& roads, RoadVertexDesc srcDesc, Ro
 		queue.push_back(tgt);
 	}
 
+	if (GraphUtil::getDegree(roads, srcDesc) == 0) roads.graph[srcDesc]->valid = false;
+
 	while (!queue.empty()) {
 		RoadVertexDesc v = queue.front();
 		queue.pop_front();
@@ -1094,9 +1140,12 @@ void PatchRoadGenerator::removeEdge(RoadGraph& roads, RoadVertexDesc srcDesc, Ro
 		for (boost::tie(ei, eend) = boost::out_edges(v, roads.graph); ei != eend; ++ei) {
 			if (!roads.graph[*ei]->valid) continue;
 
-			roads.graph[*ei]->valid = false;
-
 			RoadVertexDesc tgt = boost::target(*ei, roads.graph);
+
+			roads.graph[*ei]->valid = false;
+			if (GraphUtil::getDegree(roads, v) == 0) roads.graph[v]->valid = false;
+			if (GraphUtil::getDegree(roads, tgt) == 0) roads.graph[tgt]->valid = false;
+
 			if (visited[tgt]) continue;
 
 			// 上で既に一本のエッジを無効にしているので、もともとdegree=2の頂点は、残り一本だけエッジが残っているはず。

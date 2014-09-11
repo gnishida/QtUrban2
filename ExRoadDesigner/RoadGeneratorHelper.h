@@ -84,6 +84,7 @@ public:
 	static void elasticTransform(RoadGraph &srcRoads, const Polyline2D &srcLine, const Polyline2D &dstLine, RoadGraph &dstRoads);
 	static bool isShape(RoadGraph &roads, RoadVertexDesc desc, std::vector<RoadEdgeDescs> &shapes, int &shape_index);
 	static std::vector<Patch> convertToPatch(int roadType, RoadGraph& roads, RoadGraph& avenues, std::vector<RoadEdgeDescs> &shapes);
+	static void markConnectorToEdge(RoadGraph &roads, RoadVertexDesc srcDesc);
 
 	static RoadVertexDesc createEdgesByExample(RoadGraph &roads, float angle, std::vector<RoadEdgeDescs> &shapes, std::vector<RoadEdgePtr> &edges, float &rotation_angle);
 	static RoadVertexDesc createEdgesByExample2(RoadGraph &roads, float angle, std::vector<RoadEdgeDescs> &shapes, std::vector<RoadEdgePtr> &edges);

@@ -330,7 +330,11 @@ void ExFeature::savePatchImages(int roadType, int ex_id, RoadGraph& roads, std::
 					int x2 = (patches[i].roads.graph[*ei]->polyline[pl+1].x() - bbox.minPt.x()) * scale;
 					int y2 = img.rows - (patches[i].roads.graph[*ei]->polyline[pl+1].y() - bbox.minPt.y()) * scale;
 
-					cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 0, 0), width);
+					if (patches[i].roads.graph[*ei]->connector) {
+						cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 128, 128), width);
+					} else {
+						cv::line(img, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 0, 0), width);
+					}
 				}
 			}
 

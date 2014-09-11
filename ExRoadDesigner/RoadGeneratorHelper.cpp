@@ -2197,6 +2197,9 @@ std::vector<Patch> RoadGeneratorHelper::convertToPatch(int roadType, RoadGraph& 
 		for (boost::tie(vi, vend) = boost::vertices(patch.roads.graph); vi != vend; ++vi) {
 			if (GraphUtil::getDegree(patch.roads, *vi) == 1) {
 				patch.connectors.push_back(*vi);
+
+				// この頂点からエッジを辿りながら、各エッジにconnectorフラグをマークする
+				markConnectorToEdge(patch.roads, *vi);
 			}
 		}
 
@@ -2204,6 +2207,34 @@ std::vector<Patch> RoadGeneratorHelper::convertToPatch(int roadType, RoadGraph& 
 	}
 
 	return patches;
+}
+
+void RoadGeneratorHelper::markConnectorToEdge(RoadGraph &roads, RoadVertexDesc srcDesc) {
+	QMap<RoadVertexDesc, bool> visited;
+	std::list<RoadVertexDesc> queue;
+
+	queue.push_back(srcDesc);
+
+	while (!queue.empty()) {
+		RoadVertexDesc v = queue.front();
+		queue.pop_front();
+
+		if (visited[v]) continue;
+		visited[v] = true;
+
+		RoadOutEdgeIter ei, eend;
+		for (boost::tie(ei, eend) = boost::out_edges(v, roads.graph); ei != eend; ++ei) {
+			if (!roads.graph[*ei]->valid) continue;
+
+			roads.graph[*ei]->connector = true;
+
+			RoadVertexDesc tgt = boost::target(*ei, roads.graph);
+
+			if (GraphUtil::getDegree(roads, tgt) == 2) {
+				queue.push_back(tgt);
+			}
+		}
+	}
 }
 
 RoadVertexDesc RoadGeneratorHelper::createEdgesByExample(RoadGraph &roads, float angle, std::vector<RoadEdgeDescs> &shapes, std::vector<RoadEdgePtr> &edges, float &rotation_angle) {
