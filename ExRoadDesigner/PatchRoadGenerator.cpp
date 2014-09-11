@@ -656,6 +656,9 @@ void PatchRoadGenerator::buildReplacementGraphByExample(int roadType, RoadGraph 
 			for (boost::tie(ei2, eend2) = boost::out_edges(root_desc, replacementGraph.graph); ei2 != eend2; ++ei2) {
 				if (!replacementGraph.graph[*ei2]->valid) continue;
 
+				// もしこのエッジがコネクタじゃないなら、削除させない
+				if (replacementGraph.graph[*ei2]->connector) continue;
+
 				Polyline2D polyline2 = GraphUtil::orderPolyLine(replacementGraph, *ei2, root_desc);
 
 				if (Util::diffAngle(polyline[1] - polyline[0], polyline2[1] - polyline2[0]) < 0.3f) {
