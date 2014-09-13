@@ -28,6 +28,7 @@ This file is part of QtUrban.
 #include "PatchWarpRoadGenerator.h"
 #include "PatchWarp2RoadGenerator.h"
 #include "PMRoadGenerator.h"
+#include "AliagaRoadGenerator.h"
 #include "RoadGeneratorHelper.h"
 #include "MainWindow.h"
 #include "Util.h"
@@ -151,6 +152,21 @@ void UrbanGeometry::generateRoadsPM(std::vector<ExFeature> &features) {
 		areas.selectedArea()->roads.adaptToTerrain(&mainWin->glWidget->vboRenderManager);
 	} else {
 		PMRoadGenerator generator(mainWin, roads, areas.selectedArea()->area, areas.selectedArea()->hintLine, &mainWin->glWidget->vboRenderManager, features);
+		generator.generateRoadNetwork();
+		roads.adaptToTerrain(&mainWin->glWidget->vboRenderManager);
+	}
+}
+
+void UrbanGeometry::generateRoadsAliaga(std::vector<ExFeature> &features) {
+	if (areas.selectedIndex == -1) return;
+	if (areas.selectedArea()->hintLine.size() == 0) return;
+
+	if (G::getBool("useLayer")) {
+		AliagaRoadGenerator generator(mainWin, areas.selectedArea()->roads, areas.selectedArea()->area, areas.selectedArea()->hintLine, &mainWin->glWidget->vboRenderManager, features);
+		generator.generateRoadNetwork();
+		areas.selectedArea()->roads.adaptToTerrain(&mainWin->glWidget->vboRenderManager);
+	} else {
+		AliagaRoadGenerator generator(mainWin, roads, areas.selectedArea()->area, areas.selectedArea()->hintLine, &mainWin->glWidget->vboRenderManager, features);
 		generator.generateRoadNetwork();
 		roads.adaptToTerrain(&mainWin->glWidget->vboRenderManager);
 	}

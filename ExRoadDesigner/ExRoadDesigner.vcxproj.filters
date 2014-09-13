@@ -358,6 +358,9 @@
     <ClCompile Include="WarpRoadGenerator.cpp">
       <Filter>road generator</Filter>
     </ClCompile>
+    <ClCompile Include="AliagaRoadGenerator.cpp">
+      <Filter>road generator</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="MainWindow.ui">
@@ -684,6 +687,9 @@
       <Filter>road generator</Filter>
     </ClInclude>
     <ClInclude Include="WarpRoadGenerator.h">
+      <Filter>road generator</Filter>
+    </ClInclude>
+    <ClInclude Include="AliagaRoadGenerator.h">
       <Filter>road generator</Filter>
     </ClInclude>
   </ItemGroup>

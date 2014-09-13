@@ -61,6 +61,7 @@ public:
 	void generateRoadsPatchWarp(std::vector<ExFeature> &features);
 	void generateRoadsPatchWarp2(std::vector<ExFeature> &features);
 	void generateRoadsPM(std::vector<ExFeature> &features);
+	void generateRoadsAliaga(std::vector<ExFeature> &features);
 
 	void render(VBORenderManager &vboRenderManager);
 	void adaptToTerrain();

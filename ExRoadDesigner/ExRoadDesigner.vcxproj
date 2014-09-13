@@ -129,6 +129,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AliagaRoadGenerator.cpp" />
     <ClCompile Include="BBox.cpp" />
     <ClCompile Include="BlendingVideoSettingDialog.cpp" />
     <ClCompile Include="BSpline.cpp" />
@@ -349,6 +350,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AliagaRoadGenerator.h" />
     <ClInclude Include="BBox.h" />
     <ClInclude Include="WarpRoadGenerator.h" />
     <CustomBuild Include="BlendingVideoSettingDialog.h">
