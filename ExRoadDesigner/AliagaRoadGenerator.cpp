@@ -41,6 +41,7 @@ void AliagaRoadGenerator::generateRoadNetwork() {
 		}
 
 		// street exからコピー
+		/*
 		{
 			RoadVertexIter vi, vend;
 			for (boost::tie(vi, vend) = boost::vertices(features[i].roads(RoadEdge::TYPE_STREET).graph); vi != vend; ++vi) {
@@ -83,6 +84,7 @@ void AliagaRoadGenerator::generateRoadNetwork() {
 				GraphUtil::addVertex(roads, v);
 			}
 		}
+		*/
 	}
 
 	// エッジを生成
@@ -116,20 +118,22 @@ void AliagaRoadGenerator::generateRoadNetwork() {
 					float length = features[ex_id].roads(RoadEdge::TYPE_AVENUE).graph[*ei]->polyline.length();
 
 					RoadVertexDesc nearestDesc;
-					if (GraphUtil::getVertex(roads, *vi, dir.length() * 1.2f, atan2f(dir.y(), dir.x()), 0.3f, nearestDesc)) {
+					float angle = atan2f(dir.y(), dir.x()) + Util::genRand(-0.3f, 0.3f);
+
+					if (GraphUtil::getVertex(roads, *vi, dir.length() * 1.2f, angle, 0.3f, nearestDesc)) {
 						if (GraphUtil::hasEdge(roads, *vi, nearestDesc)) continue;
+
+						if (GraphUtil::getDegree(roads, nearestDesc) >= 4) continue;
 
 						// polylineの生成
 						RoadEdgePtr edge = RoadEdgePtr(new RoadEdge(RoadEdge::TYPE_AVENUE, 1));
 						edge->polyline = generatePolyline(roads.graph[*vi]->pt, roads.graph[nearestDesc]->pt, length);
 
-						// 他の既存エッジと交差するなら、そこにスナップ
+						// 他の既存エッジと交差するなら、キャンセル
 						RoadEdgeDesc nearestEdge;
 						QVector2D intPoint;
 						if (GraphUtil::isIntersect(roads, edge->polyline, *vi, nearestEdge, intPoint)) {
-							edge->polyline = Polyline2D();
-							edge->polyline.push_back(roads.graph[*vi]->pt);
-							edge->polyline.push_back(intPoint);
+							continue;
 						}
 						
 
@@ -139,6 +143,7 @@ void AliagaRoadGenerator::generateRoadNetwork() {
 				}
 			}
 
+			/*
 			if (street) {
 				RoadOutEdgeIter ei, eend;
 				for (boost::tie(ei, eend) = boost::out_edges(ex_street_desc, features[ex_id].roads(RoadEdge::TYPE_STREET).graph); ei != eend; ++ei) {
@@ -170,15 +175,58 @@ void AliagaRoadGenerator::generateRoadNetwork() {
 					}
 				}
 			}
+			*/
 		}
 	}
-
-	return;
 
 	/////////////////////////////////////////////////
 	// local street
 	// 全ての頂点をstreet Exからコピー
 	for (int i = 0; i < features.size(); ++i) {
+		{
+			RoadVertexIter vi, vend;
+			for (boost::tie(vi, vend) = boost::vertices(features[i].roads(RoadEdge::TYPE_STREET).graph); vi != vend; ++vi) {
+				if (!features[i].roads(RoadEdge::TYPE_STREET).graph[*vi]->valid) continue;
+
+				QVector2D pt = features[i].roads(RoadEdge::TYPE_STREET).graph[*vi]->pt - features[i].hintLine[0] + hintLine[i];
+
+				// エリア外ならスキップ
+				if (!targetArea.contains(pt)) continue;
+
+				// 他のシードの方が近い場合は、スキップ
+				{
+					bool skip = false;
+					for (int j = 0; j < hintLine.size(); ++j) {
+						if (i == j) continue;
+
+						if ((hintLine[j] - pt).lengthSquared() < 
+							(hintLine[i] - pt).lengthSquared()) {
+								skip = true;
+						}
+					}
+
+					if (skip) continue;
+				}
+
+				// 既に同じ場所に頂点があれば、example_street_descをセットして、スキップ
+				RoadVertexDesc desc;
+				if (GraphUtil::getVertex(roads, pt, 1.0f, desc)) {
+					if (roads.graph[desc]->properties["ex_id"].toInt() == i) {
+						roads.graph[desc]->properties["example_street_desc"] = *vi;
+					}
+					continue;
+				}
+
+				// 頂点を生成
+				RoadVertexPtr v = RoadVertexPtr(new RoadVertex(pt));
+				v->properties["ex_id"] = i;
+				v->properties["example_street_desc"] = *vi;
+				v->type = RoadEdge::TYPE_STREET;
+				GraphUtil::addVertex(roads, v);
+			}
+		}
+		
+		/*
 		RoadVertexIter vi, vend;
 		for (boost::tie(vi, vend) = boost::vertices(features[i].roads(RoadEdge::TYPE_STREET).graph); vi != vend; ++vi) {
 			if (!features[i].roads(RoadEdge::TYPE_STREET).graph[*vi]->valid) continue;
@@ -219,6 +267,7 @@ void AliagaRoadGenerator::generateRoadNetwork() {
 			v->type = RoadEdge::TYPE_STREET;
 			GraphUtil::addVertex(roads, v);
 		}
+		*/
 	}
 
 	// エッジを生成
@@ -236,6 +285,41 @@ void AliagaRoadGenerator::generateRoadNetwork() {
 				street = true;
 			}
 
+			if (street) {
+				RoadOutEdgeIter ei, eend;
+				for (boost::tie(ei, eend) = boost::out_edges(ex_street_desc, features[ex_id].roads(RoadEdge::TYPE_STREET).graph); ei != eend; ++ei) {
+					RoadVertexDesc ex_tgt = boost::target(*ei, features[ex_id].roads(RoadEdge::TYPE_AVENUE).graph);
+
+					QVector2D dir = features[ex_id].roads(RoadEdge::TYPE_STREET).graph[ex_tgt]->pt - features[ex_id].roads(RoadEdge::TYPE_STREET).graph[ex_street_desc]->pt;
+					float length = features[ex_id].roads(RoadEdge::TYPE_STREET).graph[*ei]->polyline.length();
+
+					RoadVertexDesc nearestDesc;
+					float angle = atan2f(dir.y(), dir.x()) + Util::genRand(-0.3f, 0.3f);
+
+					if (GraphUtil::getVertex(roads, *vi, dir.length() * 1.2f, angle, 0.3f, nearestDesc)) {
+						if (GraphUtil::hasEdge(roads, *vi, nearestDesc)) continue;
+
+						if (GraphUtil::getDegree(roads, nearestDesc) >= 4) continue;
+
+						// polylineの生成
+						RoadEdgePtr edge = RoadEdgePtr(new RoadEdge(RoadEdge::TYPE_STREET, 1));
+						edge->polyline = generatePolyline(roads.graph[*vi]->pt, roads.graph[nearestDesc]->pt, length);
+
+						// 他の既存エッジと交差するなら、キャンセル
+						RoadEdgeDesc nearestEdge;
+						QVector2D intPoint;
+						if (GraphUtil::isIntersect(roads, edge->polyline, *vi, nearestEdge, intPoint)) {
+							continue;
+						}
+						
+
+						// エッジ生成
+						GraphUtil::addEdge(roads, *vi, nearestDesc, edge);
+					}
+				}
+			}
+
+			/*
 			if (street) {
 				RoadOutEdgeIter ei, eend;
 				for (boost::tie(ei, eend) = boost::out_edges(ex_street_desc, features[ex_id].roads(RoadEdge::TYPE_STREET).graph); ei != eend; ++ei) {
@@ -265,6 +349,7 @@ void AliagaRoadGenerator::generateRoadNetwork() {
 					}
 				}
 			}
+			*/
 		}
 	}
 }
@@ -287,8 +372,13 @@ Polyline2D AliagaRoadGenerator::generatePolyline(const QVector2D& p1, const QVec
 		QVector2D pt2 = p1 * 0.66666f + p2 * 0.33333f;
 		QVector2D pt3 = p1 * 0.33333f + p2 * 0.66666f;
 
-		pt2 += pdir * Util::genRand(-length * 0.33333f, length * 0.33333f);
-		pt3 += pdir * Util::genRand(-length * 0.33333f, length * 0.33333f);
+		if (Util::genRand(0, 1) > 0.5f) {
+			pt2 += pdir * Util::genRand(0, length * 0.3f);
+			pt3 += pdir * Util::genRand(0, length * 0.3f);
+		} else {
+			pt2 += pdir * Util::genRand(-length * 0.3f, 0);
+			pt3 += pdir * Util::genRand(-length * 0.3f, 0);
+		}
 
 		Polyline2D polyline;
 		polyline.push_back(p1);

@@ -1,0 +1,14 @@
+<feature>
+    <area>
+        <point x="-1561.14892578125" y="1834.77783203125"/>
+        <point x="1313.46337890625" y="1911.434204101563"/>
+        <point x="1368.217895507813" y="-870.0955200195313"/>
+        <point x="-1610.427978515625" y="-952.227294921875"/>
+        <point x="-1561.14892578125" y="1834.77783203125"/>
+    </area>
+    <hintLine>
+        <point x="-208.7122344970703" y="504.2429809570313"/>
+    </hintLine>
+    <avenues filename="little_curvy.xml.avenues.gsm"/>
+    <streets filename="little_curvy.xml.streets.gsm"/>
+</feature>

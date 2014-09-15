@@ -182,6 +182,12 @@ void PMRoadGenerator::generateStreetSeeds(std::list<RoadVertexDesc> &seeds) {
 		for (boost::tie(ei, eend) = edges(roads.graph); ei != eend && i < num; ++ei) {
 			if (!roads.graph[*ei]->valid) continue;
 
+			RoadVertexDesc src = boost::source(*ei, roads.graph);
+			RoadVertexDesc tgt = boost::target(*ei, roads.graph);
+
+			// 両端頂点がエリア外なら、スキップ
+			if (!targetArea.contains(roads.graph[src]->pt) && !targetArea.contains(roads.graph[tgt]->pt)) continue;
+
 			std::cout << "Initial seed generation for the local street (i: " << i << ")" << std::endl;
 			++i;
 
@@ -189,13 +195,8 @@ void PMRoadGenerator::generateStreetSeeds(std::list<RoadVertexDesc> &seeds) {
 			RoadEdgeDesc e = *ei;
 			RoadEdgeDesc e1, e2;
 
-			RoadVertexDesc src = boost::source(*ei, roads.graph);
-			RoadVertexDesc tgt = boost::target(*ei, roads.graph);
-
-
 			// 両端の頂点から、group_idを特定
 			int group_id = roads.graph[src]->properties["group_id"].toInt();
-
 
 			int num = roads.graph[e]->polyline.length() / interpolated_length;
 			if (num == 0) continue;
